@@ -1,0 +1,81 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    env_file: .env
+    environment:
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "${RABBITMQ_PORT}:5672"
+      - "15672:15672"
+
+  s3:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
+    ports:
+      - "${S3_PORT}:9000"
+      - "9001:9001"
+    env_file: .env
+    command: server /data --console-address ":9001"
+    volumes:
+      - s3data:/data
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - inference
+    env_file: .env
+    environment:
+      - DB_HOST=postgres
+      - RABBITMQ_HOST=rabbitmq
+      - INFERENCE_HOST=inference
+
+  inference:
+    build:
+      context: ./inference
+    ports:
+      - "${INFERENCE_PORT}:50051"
+    env_file: .env
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+
+  training:
+    build:
+      context: ./training
+    depends_on:
+      - postgres
+      - rabbitmq
+      - s3
+    env_file: .env
+    environment:
+      - DB_HOST=postgres
+      - RABBITMQ_HOST=rabbitmq
+      - S3_HOST=s3
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+       - VITE_API_URL=${VITE_API_URL}
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    env_file: .env
+    environment:
+      - VITE_API_URL=http://backend:8080/api
+
+volumes:
+  pgdata:
+  s3data:

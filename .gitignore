@@ -1,0 +1,70 @@
+# ==========================================
+# OS & IDE
+# ==========================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ==========================================
+# Environment Variables
+# ==========================================
+.env
+.env.*
+!.env.example
+
+# ==========================================
+# Frontend (React/Vite)
+# ==========================================
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# ==========================================
+# Backend (Go)
+# ==========================================
+backend/bin/
+backend/vendor/
+backend/api # Local compiled binary
+
+# ==========================================
+# Python (Inference & Training)
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+ENV/
+env.bak/
+
+# ==========================================
+# Generated Code (Protobuf / gRPC)
+# ==========================================
+backend/pkg/pb/
+inference/src/inference/pb/*
+!inference/src/inference/pb/__init__.py

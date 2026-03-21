@@ -1,0 +1,20 @@
+[project]
+name = "inference"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "M1KUS3Q",email = "mikolaj.popik@icloud.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "grpcio (>=1.78.0,<2.0.0)",
+    "protobuf (>=7.34.1,<8.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "inference", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

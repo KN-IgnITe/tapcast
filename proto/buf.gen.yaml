@@ -1,0 +1,14 @@
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: ../backend/pkg/pb
+    opt: paths=source_relative
+  - remote: buf.build/grpc/go
+    out: ../backend/pkg/pb
+    opt: paths=source_relative
+  - remote: buf.build/protocolbuffers/python
+    out: ../inference/src/inference/pb
+  - remote: buf.build/grpc/python
+    out: ../inference/src/inference/pb
+  - remote: buf.build/protocolbuffers/pyi
+    out: ../inference/src/inference/pb
