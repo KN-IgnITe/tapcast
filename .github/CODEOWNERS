@@ -2,10 +2,10 @@
 * @Dzmhar @M1KUS3Q
 
 # foldery zespolow
-/frontend/       @KN-IGNITe/frontend
-/backend/        @KN-IGNITe/backend
-/inference/      @KN-IGNITe/ml
-/training/       @KN-IGNITe/ml
+/frontend/       @KN-IgnITe/frontend
+/backend/        @KN-IgnITe/backend
+/inference/      @KN-IgnITe/ml
+/training/       @KN-IgnITe/ml
 
 # Foldery konfiguracyjne - DevOps
 /.github/        @Dzmhar @M1KUS3Q
