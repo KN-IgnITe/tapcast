@@ -17,7 +17,7 @@ init-hooks:
 	lefthook install
 
 init-env:
-	@if [ ! -f .env ]; then touch .env; echo "Error: .env file missing. Created template. Populate variables and rerun."; exit 1; fi
+	@if [ ! -f .env ]; then cp .env.example .env; echo "Error: .env file missing. Created template. Populate variables and rerun."; exit 1; fi
 
 up: init-env
 	docker compose up -d
@@ -35,16 +35,16 @@ proto:
 	cd proto && buf generate
 
 deps-frontend: init-env
-	docker compose up --build -d postgres rabbitmq s3 inference backend
+	docker compose up -d postgres rabbitmq s3 inference backend
 
 deps-backend: init-env
-	docker compose up --build -d postgres rabbitmq s3 inference
+	docker compose up -d postgres rabbitmq s3 inference
 
 deps-inference: init-env
-	docker compose up --build -d postgres s3
+	docker compose up -d postgres s3
 
 deps-training: init-env
-	docker compose up --build -d postgres rabbitmq s3
+	docker compose up -d postgres rabbitmq s3
 
 dev-frontend: deps-frontend
 	$(MAKE) frontend-local
