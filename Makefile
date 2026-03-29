@@ -1,7 +1,20 @@
 include .env
 export
 
-.PHONY: init-env up down build logs proto deps-frontend deps-backend deps-inference deps-training dev-frontend dev-backend dev-inference dev-training backend-local inference-local training-local frontend-local clean
+.PHONY: init-hooks init-env up down build logs proto deps-frontend deps-backend deps-inference deps-training dev-frontend dev-backend dev-inference dev-training backend-local inference-local training-local frontend-local clean
+
+init-hooks:
+	@echo "Bootstrapping Go tools..."
+	go install golang.org/x/tools/cmd/goimports@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@echo "Bootstrapping Python (Inference)..."
+	cd inference && poetry install
+	@echo "Bootstrapping Python (Training)..."
+	cd training && poetry install
+	@echo "Bootstrapping Node (Frontend)..."
+	cd frontend && npm ci
+	@echo "Initializing Git Hooks..."
+	lefthook install
 
 init-env:
 	@if [ ! -f .env ]; then touch .env; echo "Error: .env file missing. Created template. Populate variables and rerun."; exit 1; fi
