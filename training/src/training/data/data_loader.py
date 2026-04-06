@@ -56,8 +56,8 @@ class DemandDataLoader:
         features =  {
             "date": data.get("date"),
             "day_of_week": data.get("day_of_week"),
-            "is_working": data.get("is_working"),
-            "is_next_day_working": data.get("is_next_day_working"),
+            "is_working": int(data.get("is_working")),
+            "is_next_day_working": int(data.get("is_next_day_working")),
         }
         features.update(weather_features)
         return features
