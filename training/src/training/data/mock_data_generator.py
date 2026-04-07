@@ -218,7 +218,7 @@ class MockDataGenerator:
 if __name__ == "__main__":
     generator = MockDataGenerator()
     # Generate data
-    mocked_json = generator.generate_mock_data(num_days=20)
+    mocked_json = generator.generate_mock_data(num_days=730)
 
     current_file_path = Path(__file__).resolve()
     training_root_dir = current_file_path.parents[3]
