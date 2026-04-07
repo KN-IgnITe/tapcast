@@ -1,47 +1,43 @@
-# print("Python Training: Worker initialized.")
 from pathlib import Path
-
 from data.data_loader import DemandDataLoader
 from data.data_splitter import DataSplitter
-from features.preprocessor import DataProcessor
+from models.model_trainer import ModelTrainer
 
 def main():
     data_path = Path(__file__).parents[2] / "data" / "raw" / "mocked_data.json"
     
     loader = DemandDataLoader(data_path)
-    splitter = DataSplitter(test_size=0.2) # 80% train, 20% test
-    preprocessor = DataProcessor()
-
-    print("Starting data processing pipeline...\n")
-
-    # Load and flatten data
-    print("1. Data loading and flattening...")
-    df_flat = loader.load_and_process()
-    print(f"   -> Loaded all rows: {len(df_flat)}")
-
-    # chronological split into train and test sets
-    print("2. Splitting data into train and test sets(chronologically)...")    
-    train_df, test_df = splitter.split(df_flat)
-    print(f" Split completed. Train rows: {len(train_df)}, Test rows: {len(test_df)}")
-
-    # Preprocessing 
-    train_processed = preprocessor.fit_transform(train_df)
-    test_processed = preprocessor.transform(test_df)
-    print("3. Data preprocessing completed.")
-
-    # Validation: Check for date continuity and no overlap
-    print("\n--- Summary of sets---")
-    print("TRAINING SET:")
-    print(f" - Rows: {len(train_df)}")
-    print(f" - From: {train_df['date'].min().date()} to: {train_df['date'].max().date()}")
+    splitter = DataSplitter(test_size=0.15, n_splits=5) # 85% train, 15% test
     
-    print("\nTEST SET:")
-    print(f" - Rows: {len(test_df)}")
-    print(f" - From: {test_df['date'].min().date()} to: {test_df['date'].max().date()}")
+    # 1. Load data and process
+    print("==========Start of pipeline============")
+    df_flat = loader.load_and_process()
+    print(f"Loaded and processed: {len(df_flat)} rows")
 
-    print("\n---------- Processed Feature Matrix(First 5 rows) ----------")
-    print(f"New column count: {len(train_processed.columns)}")
-    print(train_processed.head().to_string())
+    # 2. split of data
+    train_val_df, test_df = splitter.get_final_test_split(df_flat)
+    print(f"Train+Val set: {len(train_val_df)} rows, Test set: {len(test_df)} rows")
+
+    # 3. Train and evaluate model
+
+    trainer_log_lin = ModelTrainer(model_type="log_lin")
+    mae_log_lin = trainer_log_lin.run_walk_forward_training(train_val_df, splitter)
+
+    trainer_xgboost = ModelTrainer(model_type="xgboost")
+    mae_xgboost = trainer_xgboost.run_walk_forward_training(train_val_df, splitter)
+
+    print(f"Log-linear model MAE: {mae_log_lin:.4f}")
+    print(f"XGBoost model MAE: {mae_xgboost:.4f}")
+
+
+    # 4. Final evaluation on test set 
+    print("\n==========Final evaluation on test set============")
+    
+    final_mae_log_lin = trainer_log_lin.evaluate_on_test(train_val_df, test_df)
+    final_mae_xgboost = trainer_xgboost.evaluate_on_test(train_val_df, test_df)
+
+    print(f"Log-Linear model final MAE on test set: {final_mae_log_lin:.4f}")
+    print(f"XGBoost model final MAE on test set: {final_mae_xgboost:.4f}")
 
 if __name__ == "__main__":
     main()

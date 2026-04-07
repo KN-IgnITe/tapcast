@@ -2,13 +2,13 @@
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 import pandas as pd
+import numpy as np
 
 class DataProcessor:
-    """ DataProcessor is responsible for preprocessing(scalinh, encoding) the data before it is fed into the model."""
+    """ DataProcessor is responsible for preprocessing(scaling, encoding) the data before it is fed into the model."""
 
     numeric_features: list[str]
     categorical_features: list[str]
-    passthrough_features: list[str]
     target_col: str
     preprocessor: ColumnTransformer
     is_fitted: bool
@@ -20,8 +20,6 @@ class DataProcessor:
         ]
 
         self.categorical_features = ["day_of_week", "category", "PLU"]
-
-        self.passthrough_features = ["is_working", "is_next_day_working"]
 
         self.target_col = "amount"
 
@@ -37,8 +35,9 @@ class DataProcessor:
 
     def fit_transform(self, train_df: pd.DataFrame) -> pd.DataFrame:
         """ Transform the training data using the defined preprocessor"""
-        
-        transformed_array = self.preprocessor.fit_transform(train_df)
+
+        train_df_logged = self._apply__log_transformer(train_df)
+        transformed_array = self.preprocessor.fit_transform(train_df_logged)
         self.is_fitted = True
 
         columns = self._get_feature_names()
@@ -50,7 +49,8 @@ class DataProcessor:
         if not self.is_fitted:
             raise RuntimeError("Preprocessor must be fitted before calling transform. Call fit_transform on training data first.")
         
-        transformed_array = self.preprocessor.transform(test_df)
+        test_df_logged = self._apply__log_transformer(test_df)
+        transformed_array = self.preprocessor.transform(test_df_logged)
 
         columns = self._get_feature_names()
 
@@ -68,3 +68,10 @@ class DataProcessor:
             if col not in self.categorical_features and col not in self.numeric_features
         ]
         return numerical_cols + categorical_cols + remainder_cols
+    
+    def _apply__log_transformer(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = df.copy()
+        df["yesterday_demand"] = np.log1p(df["yesterday_demand"].astype(float))
+        df["week_ago_demand"] = np.log1p(df["week_ago_demand"].astype(float))
+
+        return df
