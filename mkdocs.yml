@@ -1,0 +1,9 @@
+site_name: TapCast Docs
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - search.suggest
+    - content.code.copy
+plugins:
+  - search

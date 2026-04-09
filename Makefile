@@ -1,7 +1,7 @@
 include .env
 export
 
-.PHONY: init-hooks init-env up down build logs proto deps-frontend deps-backend deps-inference deps-training dev-frontend dev-backend dev-inference dev-training backend-local inference-local training-local frontend-local clean
+.PHONY: init-hooks init-env up down build logs proto deps-frontend deps-backend deps-inference deps-training dev-frontend dev-backend dev-inference dev-training backend-local inference-local training-local frontend-local clean docs
 
 init-hooks:
 	@echo "Bootstrapping Go tools..."
@@ -73,3 +73,6 @@ frontend-local: init-env
 clean: down
 	rm -rf backend/pkg/pb
 	find inference/src/inference/pb -type f ! -name '__init__.py' -delete
+
+docs:
+	docker compose --profile docs up mkdocs
