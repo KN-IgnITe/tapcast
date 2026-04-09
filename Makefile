@@ -13,6 +13,8 @@ init-hooks:
 	cd training && poetry install
 	@echo "Bootstrapping Node (Frontend)..."
 	cd frontend && npm ci
+	@echo "Bootstrapping Prettier (Documentation)..."
+	npm install --save-dev prettier
 	@echo "Initializing Git Hooks..."
 	lefthook install
 

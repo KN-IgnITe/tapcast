@@ -1,6 +1,6 @@
 # Start here
 
-Welcome to the TapCast project documentation! 
+Welcome to the TapCast project documentation!
 
 ## Sections
 

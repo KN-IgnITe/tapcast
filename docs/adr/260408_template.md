@@ -1,8 +1,7 @@
-# Template
-Below is a template for documenting an Architectural Decision Record (ADR). 
-Use this template to create new ADRs.
-
 # [Short Title of Solved Problem and Solution]
+>
+> Below is a template for documenting an Architectural Decision Record (ADR).
+> Use this template to create new ADRs.
 
 * Status: [proposed | rejected | accepted | deprecated | superseded by [XXXXXX]]
 * Date: YYYY-MM-DD
@@ -41,13 +40,16 @@ Chosen option: **[Option 1]**, because [objective justification mapping directly
 ## Pros and Cons of the Options
 
 ### [Option 1]
+
 * **Pros:** [Time/Space Complexity, Scalability, Maintainability]
 * **Cons:** [Bottlenecks, Vendor lock-in, Costs]
 
 ### [Option 2]
+
 * **Pros:** [Argument]
 * **Cons:** [Argument]
 
 ### [Option 3]
+
 * **Pros:** [Argument]
 * **Cons:** [Argument]

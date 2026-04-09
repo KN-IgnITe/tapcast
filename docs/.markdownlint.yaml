@@ -1,0 +1,5 @@
+# Disable the 80-character line length limit
+MD013: false
+
+# Allow inline HTML
+MD033: false

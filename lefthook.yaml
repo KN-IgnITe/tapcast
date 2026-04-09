@@ -52,3 +52,10 @@ pre-commit:
       root: "frontend/"
       glob: "*.{ts,tsx}"
       run: npx tsc --noEmit
+
+    # MkDocs: Documentation
+    docs-mkdocs:
+      root: "docs/"
+      glob: "*.{md,markdown}"
+      run: docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:latest --fix {staged_files}
+      stage_fixed: true
