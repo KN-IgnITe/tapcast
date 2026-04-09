@@ -58,4 +58,6 @@ pre-commit:
       root: "docs/"
       glob: "*.{md,markdown}"
       run: docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:latest --fix {staged_files}
+      exclude:
+        - "docs/adr/_template.md"
       stage_fixed: true

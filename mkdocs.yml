@@ -7,3 +7,6 @@ theme:
     - content.code.copy
 plugins:
   - search
+
+exclude_docs: |
+  adr/_template.md

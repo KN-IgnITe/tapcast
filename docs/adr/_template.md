@@ -1,7 +1,7 @@
-# [Short Title of Solved Problem and Solution]
->
 > Below is a template for documenting an Architectural Decision Record (ADR).
 > Use this template to create new ADRs.
+
+# [Short Title of Solved Problem and Solution]
 
 * Status: [proposed | rejected | accepted | deprecated | superseded by [XXXXXX]]
 * Date: YYYY-MM-DD
