@@ -1,11 +1,11 @@
+from typing import Dict, Tuple
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error,  mean_squared_error, r2_score
 from xgboost import XGBRegressor
 from sklearn.linear_model import Ridge
 from data.data_splitter import DataSplitter
 from features.preprocessor import DataProcessor
-
 
 class ModelTrainer:
     """Initializes, trains and evaluates model in walkForward approach"""
@@ -37,107 +37,96 @@ class ModelTrainer:
         else:
             raise ValueError(f"Unsupported model type: {self.model_type}. Choose 'log_lin' or 'xgboost'.")
         
-    def run_walk_forward_training(self, train_val_df: pd.DataFrame, splitter: DataSplitter) -> float:   
-
-        mae_scores = []
-        rmse_scores = []
-        r2_scores = []
-        mape_scores = []
-
-        for fold, (train_idx, val_idx) in enumerate(splitter.get_walk_forward_splits(train_val_df)):
-            # Split the data into training and validation sets for the current fold
-            train_fold = train_val_df.iloc[train_idx]
-            val_fold = train_val_df.iloc[val_idx]
-
-            preprocessor = DataProcessor()
-
-            # Transform the training and validation data using the preprocessor
-            X_train_proc = preprocessor.fit_transform(train_fold)
-            X_val_proc = preprocessor.transform(val_fold)
-
-            # Extract the target variable
-            drop_cols = ["amount", "date"]  
-            X_train = X_train_proc.drop(columns=drop_cols).astype(float)
-            y_train = X_train_proc["amount"].astype(float)
-
-            X_val = X_val_proc.drop(columns=drop_cols).astype(float)
-            y_val = X_val_proc["amount"].astype(float)
-
-            # If log_lin model, apply log transformation to the target variable
-            if self.model_type == "log_lin":
-                y_train = np.log1p(y_train)
-
-            # Inicialize and train the model
-            model = self._get_model()
-            model.fit(X_train, y_train)    
-
-            # predict on unknown set val
-            preds = model.predict(X_val)
-
-            # Reverse logarithm
-            if self.model_type == "log_lin":
-                preds = np.expm1(preds)
-
-            # Clip predictions to be non-negative
-            preds = np.clip(preds, a_min = 0, a_max = None)    
-
-            mae = mean_absolute_error(y_val, preds)
-            rmse = np.sqrt(mean_squared_error(y_val, preds))
-            r2 = r2_score(y_val, preds)
-            mape = mean_absolute_percentage_error(y_val, preds)
-
-            mae_scores.append(mae)
-            rmse_scores.append(rmse)
-            r2_scores.append(r2)
-            mape_scores.append(mape)
-
-            print(f"Fold {fold + 1} | MAE: {mae:.4f} | RMSE: {rmse:.4f} | R2: {r2:.4f} | MAPE: {mape:.4f}")
-
-        # Summarize results across folds
-        mean_mae = np.mean(mae_scores)
-        mean_rmse = np.mean(rmse_scores)
-        mean_r2 = np.mean(r2_scores)
-        mean_mape = np.mean(mape_scores)
-
-        print(f"Average MAE across folds: {mean_mae:.4f}")
-        print(f"Average RMSE across folds: {mean_rmse:.4f}")
-        print(f"Average R2 across folds: {mean_r2:.4f}")
-        print(f"Average MAPE across folds: {mean_mape:.4f}")
-
-        return mean_mae    
-    
-    def evaluate_on_test(self, train_df: pd.DataFrame, test_df: pd.DataFrame) -> float:
-        """Train model on whole train data and evaluate on test set"""
+    def _prepare_data(self, train_df: pd.DataFrame, eval_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
+        """Preprocess the data and split into X and Y"""
         preprocessor = DataProcessor()
 
         X_train_proc = preprocessor.fit_transform(train_df)
-        X_test_proc = preprocessor.transform(test_df)
+        X_eval_proc = preprocessor.transform(eval_df)
 
         drop_cols = ["amount", "date"]  
         X_train = X_train_proc.drop(columns=drop_cols).astype(float)
         y_train = X_train_proc["amount"].astype(float)
 
-        X_test = X_test_proc.drop(columns=drop_cols).astype(float)
-        y_test = X_test_proc["amount"].astype(float)
+        X_eval = X_eval_proc.drop(columns=drop_cols).astype(float)
+        y_eval = X_eval_proc["amount"].astype(float)
+
+        return X_train, y_train, X_eval, y_eval
+    
+    def _train_and_predict(self, X_train: pd.DataFrame, y_train: pd.Series, X_eval: pd.DataFrame) -> np.ndarray:
+        """Handles target transformation, model training and prediction"""
 
         if self.model_type == "log_lin":
             y_train = np.log1p(y_train)
 
         model = self._get_model()
-        model.fit(X_train, y_train)
+        model.fit(X_train, y_train)    
 
-        preds = model.predict(X_test)
+        preds = model.predict(X_eval)
 
+        # If log_lin model, apply log transformation to the target variable
         if self.model_type == "log_lin":
             preds = np.expm1(preds)
 
         preds = np.clip(preds, a_min=0, a_max=None)
 
-        mae = mean_absolute_error(y_test, preds)
-        rmse = np.sqrt(mean_squared_error(y_test, preds))
-        r2 = r2_score(y_test, preds)
-        mape = mean_absolute_percentage_error(y_test, preds)
+        return preds
+    
+    def _calculate_metrics(self, y_true: pd.Series, preds: np.ndarray) -> Dict[str, float]:
+        """ Calculate and returns evaluation metrics for the predictions"""
+        # Defence against potential issues with zero values in y_true for MAPE calculation
+        # 1. Liczymy sumę błędów w sztukach dla całego zbioru (licznik)
+        sum_errors = np.sum(np.abs(y_true - preds))
+        
+        # 2. Liczymy sumę prawdziwej sprzedaży dla całego zbioru (mianownik)
+        sum_actuals = np.sum(y_true)
+        
+        # 3. Liczymy wMAPE. Epsilon (1e-10) dodajemy tylko na wypadek, 
+        # gdyby w całym badanym okresie sprzedaż absolutnie wszystkich produktów wynosiła 0.
+        wmape = sum_errors / (sum_actuals + 1e-10)
 
-        print(f"Test set evaluation | MAE: {mae:.4f} | RMSE: {rmse:.4f} | R2: {r2:.4f} | MAPE: {mape:.4f}")
+        return {
+            "MAE": mean_absolute_error(y_true, preds),
+            "RMSE": np.sqrt(mean_squared_error(y_true, preds)),
+            "R2": r2_score(y_true, preds),
+            "MAPE": wmape
+        }
+    
+    def _run_pipeline(self, train_df: pd.DataFrame, eval_df: pd.DataFrame) -> Tuple[Dict[str, float], np.ndarray]:
+        """Runs the full pipeline of data preparation, model training and evaluation"""
+        X_train, y_train, X_eval, y_eval = self._prepare_data(train_df, eval_df)
+        preds = self._train_and_predict(X_train, y_train, X_eval)
+        metrics = self._calculate_metrics(y_eval, preds)
 
-        return mae
+        return metrics, preds
+    
+    def run_walk_forward_training(self, train_val_df: pd.DataFrame, splitter: DataSplitter) -> float:
+        """Runs walk-forward training and evaluation, returns average MAE across folds"""
+        all_metrics = {"MAE": [], "RMSE": [], "R2": [], "MAPE": []}
+
+        for fold, (train_idx, val_idx) in enumerate(splitter.get_walk_forward_splits(train_val_df)):
+            train_fold = train_val_df.iloc[train_idx]
+            val_fold = train_val_df.iloc[val_idx]
+
+            metrics, _ = self._run_pipeline(train_fold, val_fold)
+
+            for key in all_metrics:
+                all_metrics[key].append(metrics[key])
+
+            print(f"Fold {fold + 1} | MAE: {metrics['MAE']:.4f} | RMSE: {metrics['RMSE']:.4f} | R2: {metrics['R2']:.4f} | MAPE: {metrics['MAPE']:.4f}")
+        
+        # Summarize results across folds
+        print("-" * 30)
+        for metrics_name, values in all_metrics.items():
+            mean_value = np.mean(values)
+            print(f"Average {metrics_name} across folds: {mean_value:.4f}")
+
+        return np.mean(all_metrics["MAE"])  
+    
+    def evaluate_on_test(self, train_df: pd.DataFrame, test_df: pd.DataFrame) -> float:
+        """Train model on whole train data and evaluate on test set"""
+        metrics, _ = self._run_pipeline(train_df, test_df)
+
+        print(f"Test set evaluation | MAE: {metrics['MAE']:.4f} | RMSE: {metrics['RMSE']:.4f} | R2: {metrics['R2']:.4f} | MAPE: {metrics['MAPE']:.4f}")
+
+        return metrics["MAE"]
