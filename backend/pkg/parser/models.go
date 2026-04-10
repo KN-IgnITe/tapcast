@@ -7,9 +7,9 @@ type MLProjectContract struct {
 }
 
 type Day struct {
-	Weather          Weather   `json:"weather"`
-	Sells            Sells     `json:"sells"`
-	
+	Weather Weather `json:"weather"`
+	Sells   Sells   `json:"sells"`
+
 	Date             time.Time `json:"date"`
 	DayOfWeek        int       `json:"day_of_week"`
 	IsWorking        bool      `json:"is_working"`

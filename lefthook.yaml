@@ -37,7 +37,7 @@ pre-commit:
     backend-golangci-lint:
       root: "backend/"
       glob: "*.go"
-      run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run {staged_files}
+      run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run ./...
 
     # TypeScript/React: Frontend
     frontend-prettier:

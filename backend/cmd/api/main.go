@@ -98,7 +98,7 @@ func uploadHandlerXLSX(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(UploadResponseXLSX{
+	_ = json.NewEncoder(w).Encode(UploadResponseXLSX{
 		Message:  "Plik przyjęty pomyślnie",
 		Filename: header.Filename,
 		Size:     size,
@@ -146,7 +146,6 @@ func main() {
 	r.Get("/api/ping", app.pingHandler)
 
 	r.Post("/uploadXLSX", uploadHandlerXLSX)
-
 
 	srv := &http.Server{
 		Addr:         ":" + backend_port,
