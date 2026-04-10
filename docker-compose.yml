@@ -76,6 +76,15 @@ services:
     environment:
       - VITE_API_URL=http://backend:8080/api
 
+  mkdocs:
+    image: squidfunk/mkdocs-material
+    profiles:
+      - docs
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/docs
+
 volumes:
   pgdata:
   s3data:

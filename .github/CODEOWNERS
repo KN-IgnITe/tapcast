@@ -1,12 +1,12 @@
 # Domyslni wlasciciele
-* @Dzmhar @M1KUS3Q
+* @KN-IgnITe/tapcast-devops
 
 # foldery zespolow
-/frontend/       @KN-IgnITe/frontend
-/backend/        @KN-IgnITe/backend
-/inference/      @KN-IgnITe/ml
-/training/       @KN-IgnITe/ml
+/frontend/       @KN-IgnITe/tapcast-frontend
+/backend/        @KN-IgnITe/tapcast-backend
+/inference/      @KN-IgnITe/tapcast-ml
+/training/       @KN-IgnITe/tapcast-ml
 
 # Foldery konfiguracyjne - DevOps
-/.github/        @Dzmhar @M1KUS3Q
-docker-compose.yml @Dzmhar @M1KUS3Q
+/.github/        @KN-IgnITe/tapcast-devops
+docker-compose.yml @KN-IgnITe/tapcast-devops
