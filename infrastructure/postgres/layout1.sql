@@ -54,29 +54,3 @@ CREATE Table IF NOT EXISTS sale(
         REFERENCES article(bar_id, plu)
 );
 
-
-
-/*
-
--- 2. Przykładowe dane (Seeding)
-INSERT INTO day (day_date, is_working) VALUES 
-('2026-04-01', true), ('2026-04-02', true), ('2026-04-03', true), 
-('2026-04-08', true), ('2026-04-09', true), ('2026-04-10', true);
-
-INSERT INTO location (location_id, name) VALUES (1, 'Warszawa Centralna');
-INSERT INTO bar (bar_id, location_id, name) VALUES (1, 1, 'Bar pod Złotym Łukiem');
-
-INSERT INTO weather (weather_date, location_id, avg_temp, temp_amplitude, rain) 
-VALUES ('2026-04-10', 1, 15.5, 5.0, 0.2);
-
-INSERT INTO article (bar_id, plu, category) VALUES (1, 101, 5), (1, 102, 6);
-
-INSERT INTO sale (sale_date, bar_id, plu, amount) VALUES 
-('2026-04-03', 1, 101, 50), -- Sprzedaż tydzień temu
-('2026-04-09', 1, 101, 60), -- Sprzedaż wczoraj
-('2026-04-10', 1, 101, 100), -- Sprzedaż dzisiaj
-
-('2026-04-03', 1, 102, 60), -- Sprzedaż tydzień temu
-('2026-04-09', 1, 102, 70), -- Sprzedaż wczoraj
-('2026-04-10', 1, 102, 110); -- Sprzedaż dzisiaj
-*/
