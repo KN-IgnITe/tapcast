@@ -1,0 +1,63 @@
+pre-commit:
+  parallel: true
+  commands:
+    # Python: Inference
+    inference-black:
+      root: "inference/"
+      glob: "*.py"
+      run: poetry run black {staged_files}
+    inference-flake8:
+      root: "inference/"
+      glob: "*.py"
+      run: poetry run flake8 {staged_files}
+    inference-mypy:
+      root: "inference/"
+      glob: "*.py"
+      run: poetry run mypy {staged_files}
+
+    # Python: Training
+    training-black:
+      root: "training/"
+      glob: "*.py"
+      run: poetry run black {staged_files}
+    training-flake8:
+      root: "training/"
+      glob: "*.py"
+      run: poetry run flake8 {staged_files}
+    training-mypy:
+      root: "training/"
+      glob: "*.py"
+      run: poetry run mypy {staged_files}
+
+    # Go: Backend
+    backend-goimports:
+      root: "backend/"
+      glob: "*.go"
+      run: go run golang.org/x/tools/cmd/goimports@latest -w {staged_files}
+    backend-golangci-lint:
+      root: "backend/"
+      glob: "*.go"
+      run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run {staged_files}
+
+    # TypeScript/React: Frontend
+    frontend-prettier:
+      root: "frontend/"
+      glob: "*.{ts,tsx,js,jsx,css,html}"
+      run: npx prettier --write {staged_files}
+    frontend-eslint:
+      root: "frontend/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: npx eslint {staged_files}
+    frontend-tsc:
+      root: "frontend/"
+      glob: "*.{ts,tsx}"
+      run: npx tsc --noEmit
+
+    # MkDocs: Documentation
+    docs-mkdocs:
+      root: "docs/"
+      glob: "*.{md,markdown}"
+      run: docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:latest --fix {staged_files}
+      exclude:
+        - "docs/adr/_template.md"
+      stage_fixed: true
