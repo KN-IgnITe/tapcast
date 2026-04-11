@@ -1,31 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import reactLogo from "./assets/react.svg";
+import viteLogo from "/vite.svg";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [backendResponse, setBackendResponse] = useState<string>('No response yet')
-  const [loading, setLoading] = useState(false)
+  const [count, setCount] = useState(0);
+  const [backendResponse, setBackendResponse] =
+    useState<string>("No response yet");
+  const [loading, setLoading] = useState(false);
 
   const callBackend = async () => {
     try {
-      setLoading(true)
-      const apiUrl = import.meta.env.VITE_API_URL
+      setLoading(true);
+      const apiUrl = import.meta.env.VITE_API_URL;
       const response = await fetch(`${apiUrl}/ping`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-      })
-      const data = await response.json()
-      setBackendResponse(JSON.stringify(data, null, 2))
+      });
+      const data = await response.json();
+      setBackendResponse(JSON.stringify(data, null, 2));
     } catch (error) {
-      setBackendResponse(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setBackendResponse(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <>
@@ -43,14 +46,16 @@ function App() {
           count is {count}
         </button>
         <button onClick={callBackend} disabled={loading}>
-          {loading ? 'Calling backend...' : 'Call Backend'}
+          {loading ? "Calling backend..." : "Call Backend"}
         </button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
-        <div style={{ marginTop: '20px', padding: '10px', borderRadius: '4px' }}>
+        <div
+          style={{ marginTop: "20px", padding: "10px", borderRadius: "4px" }}
+        >
           <h3>Backend Response:</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
             {backendResponse}
           </pre>
         </div>
@@ -59,7 +64,7 @@ function App() {
         Click on the Vite and React logos to learn more
       </p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

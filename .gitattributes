@@ -1,0 +1,7 @@
+# normalize line endings to LF for all text files
+* text=auto eol=lf
+
+# Flag all file types that should not be modified as binary
+*.png binary
+*.jpg binary
+*.pdf binary
