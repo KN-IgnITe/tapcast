@@ -48,8 +48,6 @@ func (a *App) pingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
-
 func main() {
 	inferenceHost := os.Getenv("INFERENCE_HOST")
 	inferencePort := os.Getenv("INFERENCE_PORT")
