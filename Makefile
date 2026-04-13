@@ -19,9 +19,7 @@ init-hooks:
 	lefthook install
 
 init-env:
-#	@if [ ! -f .env ]; then cp .env.example .env; echo "Error: .env file missing. Created template. Populate variables and rerun."; exit 1; fi
-
-# New version (copies template and allows the program to continue):
+# copies template and allows the program to continue
 	@if [ ! -f .env ]; then cp .env.example .env; echo "Successfully created .env file from template. Please populate the variables!"; fi
 
 up: init-env
