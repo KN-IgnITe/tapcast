@@ -1,4 +1,4 @@
-include .env
+-include .env
 export
 
 .PHONY: init-hooks init-env up down build logs proto deps-frontend deps-backend deps-inference deps-training dev-frontend dev-backend dev-inference dev-training backend-local inference-local training-local frontend-local clean docs
@@ -18,8 +18,11 @@ init-hooks:
 	@echo "Initializing Git Hooks..."
 	lefthook install
 
+#init-env:
+#	@if [ ! -f .env ]; then cp .env.example .env; echo "Error: .env file missing. Created template. Populate variables and rerun."; exit 1; fi
+
 init-env:
-	@if [ ! -f .env ]; then cp .env.example .env; echo "Error: .env file missing. Created template. Populate variables and rerun."; exit 1; fi
+	@if [ ! -f .env ]; then cp .env.example .env; echo "Pomyślnie utworzono plik .env z szablonu. Uzupełnij zmienne!"; fi
 
 up: init-env
 	docker compose up -d
