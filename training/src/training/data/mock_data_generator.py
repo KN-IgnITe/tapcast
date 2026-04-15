@@ -102,6 +102,8 @@ DEFAULT_PRODUCTS = [
 
 
 class WeatherGenerator:
+    cfg: WeatherConfig
+
     def __init__(self, cfg: WeatherConfig) -> None:
         self.cfg = cfg
 
@@ -121,6 +123,12 @@ class WeatherGenerator:
 
 
 class DemandGenerator:
+    products: List[Product]
+    sales_cfg: SalesConfig
+    weights: LogLinWeights
+    weather_cfg: WeatherConfig
+    history: Dict[tuple[int, date], int]
+
     def __init__(
         self,
         products: List[Product],
@@ -203,6 +211,9 @@ class DemandGenerator:
 
 class MockDataOrchestrator:
     """Orchestrator for generating mock data, keeping history and correlations"""
+    products: List[Product]
+    weather_gen: WeatherGenerator
+    demand_gen: DemandGenerator
 
     def __init__(
         self,
