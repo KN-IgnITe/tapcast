@@ -4,14 +4,46 @@ import math
 import random
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
+from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+
+class ProductCategory(IntEnum):
+    COCKTAILS = 1
+    BEER = 2
+    COFFEE_SNACKS = 3
+
+
+class WeatherKey(str, Enum):
+    AVG_TEMP = "avg_temp"
+    TEMP_AMPLITUDE = "temp_amplitude"
+    RAIN = "rain"
+
+
+class ArticleKey(str, Enum):
+    PLU = "PLU"
+    CATEGORY = "category"
+    AMOUNT = "amount"
+    YESTERDAY_DEMAND = "yesterday_demand"
+    WEEK_AGO_DEMAND = "week_ago_demand"
+
+
+class DayKey(str, Enum):
+    WEATHER = "weather"
+    SELLS = "sells"
+    DATE = "date"
+    DAY_OF_WEEK = "day_of_week"
+    IS_WORKING = "is_working"
+    IS_NEXT_DAY_WORKING = "is_next_day_working"
+    ARTICLES = "articles"
+    DAY_DATA = "day_data"
 
 
 @dataclass
 class Product:
     plu: int
-    category: int
+    category: ProductCategory
     base_demand: int
 
 
@@ -43,11 +75,11 @@ class SalesConfig:
     week_ago_demand_weight: float = 0.25
     yesterday_demand_weight: float = 0.15
 
-    category_multipliers: Dict[int, float] = field(
+    category_multipliers: Dict[ProductCategory, float] = field(
         default_factory=lambda: {
-            1: 2.8,  # 1 cocktails, alcohol
-            2: 3.5,  # 2 beer
-            3: 1.5,  # 3 coffee, snacks
+            ProductCategory.COCKTAILS: 2.8,  # 1 cocktails, alcohol
+            ProductCategory.BEER: 3.5,  # 2 beer
+            ProductCategory.COFFEE_SNACKS: 1.5,  # 3 coffee, snacks
         }
     )
 
@@ -62,54 +94,45 @@ class LogLinWeights:
 
 # Category 1 - cocktails,alcohol 2 - beer, 3 -coffee, snacks
 DEFAULT_PRODUCTS = [
-    Product(plu=101, category=1, base_demand=50),
-    Product(plu=102, category=1, base_demand=20),
-    Product(plu=201, category=2, base_demand=100),
-    Product(plu=305, category=3, base_demand=5),
+    Product(plu=101, category=ProductCategory.COCKTAILS, base_demand=50),
+    Product(plu=102, category=ProductCategory.BEER, base_demand=20),
+    Product(plu=201, category=ProductCategory.BEER, base_demand=100),
+    Product(plu=305, category=ProductCategory.COFFEE_SNACKS, base_demand=5),
 ]
 
 
-class MockDataGenerator:
-    products: List[Product]
-    weather_cfg: WeatherConfig
-    sales_cfg: SalesConfig
-    weights: LogLinWeights
+class WeatherGenerator:
+    def __init__(self, cfg: WeatherConfig) -> None:
+        self.cfg = cfg
 
-    def __init__(
-        self,
-        products: List[Product] = None,
-        weather_cfg: WeatherConfig = WeatherConfig(),
-        sales_cfg: SalesConfig = SalesConfig(),
-        weights: LogLinWeights = LogLinWeights(),
-    ):
-        self.products = products if products is not None else DEFAULT_PRODUCTS
-        self.weather_cfg = weather_cfg
-        self.sales_cfg = sales_cfg
-        self.weights = weights
-        # Generator memory: key is PLU and date and the value is demand that day
-        self.history: Dict[tuple[int, date], int] = {}
-
-    def _is_working_day(self, date_obj: date) -> bool:
-        return date_obj.weekday() < calendar.SATURDAY
-
-    def _generate_weather(self) -> Dict[str, float]:
-        """Generate random weather data for single day."""
-        is_raining = random.random() < self.weather_cfg.rain_chance
-        rain_amount = (
-            random.uniform(0.0, self.weather_cfg.max_rain) if is_raining else 0.0
-        )
+    def generate(self) -> Dict[str, float]:
+        is_raining = random.random() < self.cfg.rain_chance
+        rain_amount = random.uniform(0.0, self.cfg.max_rain) if is_raining else 0.0
 
         return {
-            "avg_temp": round(
-                random.uniform(self.weather_cfg.min_temp, self.weather_cfg.max_temp),
-                self.weather_cfg.precision,
+            WeatherKey.AVG_TEMP: round(
+                random.uniform(self.cfg.min_temp, self.cfg.max_temp), self.cfg.precision
             ),
-            "temp_amplitude": round(
-                random.uniform(self.weather_cfg.min_amp, self.weather_cfg.max_amp),
-                self.weather_cfg.precision,
+            WeatherKey.TEMP_AMPLITUDE: round(
+                random.uniform(self.cfg.min_amp, self.cfg.max_amp), self.cfg.precision
             ),
-            "rain": round(rain_amount, self.weather_cfg.precision),
+            WeatherKey.RAIN: round(rain_amount, self.cfg.precision),
         }
+
+
+class DemandGenerator:
+    def __init__(
+        self,
+        products: List[Product],
+        sales_cfg: SalesConfig,
+        weights: LogLinWeights,
+        wearter_cfg: WeatherConfig,
+    ) -> None:
+        self.products = products
+        self.sales_cfg = sales_cfg
+        self.weights = weights
+        self.weather_cfg = wearter_cfg
+        self.history: Dict[tuple[int, date], int] = {}
 
     def _get_day_multiplier(self, weekday: int, multiplier: float) -> float:
         if weekday == calendar.FRIDAY:
@@ -118,88 +141,99 @@ class MockDataGenerator:
             return multiplier
         elif weekday == calendar.SUNDAY:
             return 1.0 + (multiplier - 1.0) * self.sales_cfg.sunday_multiplier_offset
-        else:
-            return 1.0
+        return 1.0
 
-    def _generate_article_data(
-        self, product: Product, current_date: date, weather: Dict[str, float]
-    ) -> Dict[str, float]:
-        """Generate random data for single article, correlated based on actual calendar days"""
-        cfg = self.sales_cfg
-        today_weekday = current_date.weekday()
-
-        # Historical data
-        yesterday_date = current_date - timedelta(days=1)
-        week_ago_date = current_date - timedelta(days=7)
-
-        # Get real data or base demand
-        real_yesterday = self.history.get(
-            (product.plu, yesterday_date), product.base_demand
-        )
-        real_week_ago = self.history.get(
-            (product.plu, week_ago_date), product.base_demand
-        )
-
-        peak_multiplier = cfg.category_multipliers.get(
-            product.category, cfg.default_weekend_multiplier
-        )
-        day_multiplier = self._get_day_multiplier(today_weekday, peak_multiplier)
-        beta_Day = math.log(day_multiplier) if day_multiplier > 0 else 0.0
-
-        log_base = math.log(max(1, product.base_demand))
-        log_yest = math.log(max(1, real_yesterday))
-        log_week = math.log(max(1, real_week_ago))
-
-        temp_effect = self.weights.temp * (
-            weather["avg_temp"] - self.weather_cfg.neutral_temp
-        )
-        rain_effect = self.weights.rain * weather["rain"]
-
-        linear_prediction = (
-            log_base
-            + temp_effect
-            + rain_effect
-            + beta_Day
-            + self.weights.yesterday * (log_yest - log_base)
-            + self.weights.week_ago * (log_week - log_base)
-        )
-
-        amount = int(random.lognormvariate(linear_prediction, cfg.demand_variance))
-        # Save data to dict
-        self.history[(product.plu, current_date)] = amount
-
-        return {
-            "PLU": product.plu,
-            "category": product.category,
-            "amount": amount,
-            "yesterday_demand": real_yesterday,
-            "week_ago_demand": real_week_ago,
-        }
-
-    def _generate_sales(
+    def generate(
         self, current_date: date, weather: Dict[str, float]
-    ) -> Dict[str, List[Dict[str, int]]]:
-        """Generate sells section for current day"""
-        articles = [
-            self._generate_article_data(product, current_date, weather)
-            for product in self.products
-        ]
+    ) -> List[Dict[str, Any]]:
+        articles = []
+        today_weekday = current_date.weekday()
+        yesterday_date = current_date - timedelta(days=1)
+        weak_ago_date = current_date - timedelta(days=7)
 
-        return {"articles": articles}
+        for product in self.products:
+            real_yesterday = self.history.get(
+                (product.plu, yesterday_date), product.base_demand
+            )
+            real_week_ago = self.history.get(
+                (product.plu, weak_ago_date), product.base_demand
+            )
+
+            peak_multiplier = self.sales_cfg.category_multipliers.get(
+                product.category, self.sales_cfg.default_weekend_multiplier
+            )
+            day_multiplier = self._get_day_multiplier(today_weekday, peak_multiplier)
+            beta_day = math.log(day_multiplier) if day_multiplier > 0 else 0.0
+
+            log_base = math.log(max(1, product.base_demand))
+            log_yest = math.log(max(1, real_yesterday))
+            log_week = math.log(max(1, real_week_ago))
+
+            temp_effect = self.weights.temp * (
+                weather[WeatherKey.AVG_TEMP] - self.weather_cfg.neutral_temp
+            )
+            rain_effect = self.weights.rain * weather[WeatherKey.RAIN]
+
+            linear_prediction = (
+                log_base
+                + temp_effect
+                + rain_effect
+                + beta_day
+                + self.weights.yesterday * (log_yest - log_base)
+                + self.weights.week_ago * (log_week - log_base)
+            )
+
+            amount = int(
+                random.lognormvariate(linear_prediction, self.sales_cfg.demand_variance)
+            )
+            self.history[(product.plu, current_date)] = amount
+
+            articles_data: Dict[str, Any] = {
+                ArticleKey.PLU: product.plu,
+                ArticleKey.CATEGORY: product.category,
+                ArticleKey.AMOUNT: amount,
+                ArticleKey.YESTERDAY_DEMAND: real_yesterday,
+                ArticleKey.WEEK_AGO_DEMAND: real_week_ago,
+            }
+
+            articles.append(articles_data)
+
+        return articles
+
+
+class MockDataOrchestrator:
+    """Orchestrator for generating mock data, keeping history and correlations"""
+
+    def __init__(
+        self,
+        products: Optional[List[Product]] = None,
+        weather_cfg: WeatherConfig = WeatherConfig(),
+        sales_cfg: SalesConfig = SalesConfig(),
+        weights: LogLinWeights = LogLinWeights(),
+    ) -> None:
+        self.products = products if products is not None else DEFAULT_PRODUCTS
+        self.weather_gen = WeatherGenerator(weather_cfg)
+        self.demand_gen = DemandGenerator(
+            self.products, sales_cfg, weights, weather_cfg
+        )
+
+    @staticmethod
+    def _is_working_day(date_obj: date) -> bool:
+        return date_obj.weekday() < calendar.SATURDAY
 
     def _generate_single_day(self, current_date: date) -> Dict[str, Any]:
-        next_date = current_date + timedelta(days=1)
-        is_working = self._is_working_day(current_date)
-        is_next_day_working = self._is_working_day(next_date)
+        daily_weather = self.weather_gen.generate()
+        articles_data = self.demand_gen.generate(current_date, daily_weather)
 
-        daily_weather = self._generate_weather()
         return {
-            "weather": daily_weather,
-            "sells": self._generate_sales(current_date, daily_weather),
-            "date": current_date.strftime("%Y-%m-%d"),
-            "day_of_week": current_date.isoweekday(),
-            "is_working": is_working,
-            "is_next_day_working": is_next_day_working,
+            DayKey.WEATHER: daily_weather,
+            DayKey.SELLS: {DayKey.ARTICLES: articles_data},
+            DayKey.DATE: current_date.strftime("%Y-%m-%d"),
+            DayKey.DAY_OF_WEEK: current_date.isoweekday(),
+            DayKey.IS_WORKING: self._is_working_day(current_date),
+            DayKey.IS_NEXT_DAY_WORKING: self._is_working_day(
+                current_date + timedelta(days=1)
+            ),
         }
 
     def generate_mock_data(
@@ -212,25 +246,26 @@ class MockDataGenerator:
             for i in range(num_days)
         ]
 
-        return {"day_data": day_data_list}
+        return {"DayKey.DAY_DATA": day_data_list}
+
+
+def save_mock_data_to_json(
+    data: Dict[str, Any], file_name: str = "mock_data.json"
+) -> None:
+    current_file_path = Path(__file__).resolve()
+    training_dir = current_file_path.parents[3]
+
+    output_dir = training_dir / "data" / "raw"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / file_name
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+    print(f"Mock data saved to {output_file}")
 
 
 if __name__ == "__main__":
-    generator = MockDataGenerator()
-    # Generate data
-    mocked_json = generator.generate_mock_data(num_days=730)
-
-    current_file_path = Path(__file__).resolve()
-    training_root_dir = current_file_path.parents[3]
-
-    # Final path
-    output_dir = training_root_dir / "data" / "raw"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    output_file = output_dir / "mocked_data.json"
-
-    # Save to file
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(mocked_json, f, indent=2, ensure_ascii=False)
-
-    print(f"Data was generated and saved: {output_file.absolute()}")
+    orchestrator = MockDataOrchestrator()
+    mock_data = orchestrator.generate_mock_data(num_days=730)
+    save_mock_data_to_json(mock_data)
