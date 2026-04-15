@@ -52,8 +52,12 @@ class DataProcessor:
     def fit_transform(self, train_df: pd.DataFrame) -> pd.DataFrame:
         """Transform the training data using the defined preprocessor"""
 
+        # Hard rest and conversion of columns to string from Enum
+        train_df = train_df.copy()
+        train_df.columns = [getattr(c, "value", str(c)) for c in train_df.columns]
+
         train_df_logged = self._apply__log_transformer(train_df)
-        train_df_logged.columns = train_df_logged.columns.astype(str)
+
         transformed_array = self.preprocessor.fit_transform(train_df_logged)
         self.is_fitted = True
 
@@ -66,8 +70,11 @@ class DataProcessor:
         if not self.is_fitted:
             raise RuntimeError("Call fit_transform on the training data first")
 
+        # Hard rest and conversion of columns to string from Enum
+        test_df = test_df.copy()
+        test_df.columns = [getattr(c, "value", str(c)) for c in test_df.columns]
+
         test_df_logged = self._apply__log_transformer(test_df)
-        test_df_logged.columns = test_df_logged.columns.astype(str)
 
         transformed_array = self.preprocessor.transform(test_df_logged)
 
