@@ -1,0 +1,29 @@
+name: Cleanup Unmerged PRs
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  remove_from_project:
+    name: Remove PR from Project if closed without merge
+    runs-on: ubuntu-latest
+
+    # Warunek: akcja odpali się tylko, gdy PR zostanie zamknięty (ale nie wciągnięty do developmentu)
+    if: github.event.pull_request.merged == false
+
+    steps:
+      - name: Print info
+        run: echo "Removing PR #${{ github.event.pull_request.number }} from the board."
+
+      - name: Remove from Project Board
+        uses: monry/actions-remove-from-project@v1
+        with:
+          # Token potrzebny do autoryzacji w Twojej organizacji
+          github-token: ${{ secrets.PAT_TOKEN }}
+          # ID Twojej organizacji
+          owner: KN-IGNITe
+          # Numer projektu. Spójrz na URL z tablicy: https://github.com/orgs/KN-IGNITe/projects/4 -> Numer to 4.
+          project-number: 4
+          # Wskazujemy konkretny Pull Request, który wywołał tę akcję
+          item-id: ${{ github.event.pull_request.node_id }}
