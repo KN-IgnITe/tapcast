@@ -27,7 +27,7 @@ pre-commit:
     training-mypy:
       root: "training/"
       glob: "*.py"
-      run: poetry run mypy {staged_files}
+      run: poetry run mypy --disallow-untyped-defs {staged_files}
 
     # Go: Backend
     backend-goimports:
