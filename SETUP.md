@@ -4,6 +4,7 @@
 Regardless of your team, you will need the following installed:
 - [Docker](https://docs.docker.com/get-docker/) & Docker Compose
 - [Make](https://www.gnu.org/software/make/)
+- [Buf] (https://docs.buf.build/installation) (for Protobuf code generation)
 - [Lefthook](https://github.com/evilmartians/lefthook) (e.g., `brew install lefthook` or `npm install -g @evilmartians/lefthook`)
 
 To initialize your local environment variables, run:
@@ -79,6 +80,9 @@ lefthook install
 If you want to spin up the entire stack (Frontend, Backend, Inference, Training, and databases) inside Docker:
 
 ```bash
+# Generate Protobuf code for backend and inference services
+make proto
+
 # Build and start all services
 make build
 
