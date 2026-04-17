@@ -49,7 +49,8 @@ class DemandDataLoader:
         """Flatten the nested JSON structure into a flat DataFrame"""
         flattened_records: List[Dict[str, Any]] = []
 
-        day_data_list = data.get(DayKey.DAY_DATA, [])
+        day_data_key = DayKey.DAY_DATA.value
+        day_data_list = data.get(day_data_key, data.get(DayKey.DAY_DATA, []))
 
         if not day_data_list:
             raise ValueError(f"No .{DayKey.DAY_DATA}' found in the JSON data")
@@ -58,7 +59,15 @@ class DemandDataLoader:
 
             base_features = self._extract_day_features(day)
 
-            for article in day.get(DayKey.SELLS, {}):
+            sells_key = DayKey.SELLS.value
+            sells_dict = day.get(sells_key, day.get(DayKey.SELLS, {}))
+
+            article_key = DayKey.ARTICLES.value
+            article_list = sells_dict.get(
+                article_key, sells_dict.get(DayKey.ARTICLES, [])
+            )
+
+            for article in article_list:
                 row = base_features.copy()
                 row.update(self._extract_article_features(article))
                 flattened_records.append(row)
