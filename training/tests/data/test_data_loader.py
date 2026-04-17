@@ -95,14 +95,19 @@ def test_flatten_data_creates_correct_flat_structure(mock_json_data: dict) -> No
 def test_load_and_process_end_to_end(tmp_path: Path, mock_json_data: dict) -> None:
     """End-to-end test for the entire loading and processing pipeline"""
     json_file = tmp_path / "mock_data.json"
+    contract_file = tmp_path / "contract.json"
+
+    with open(contract_file, "w", encoding="utf-8") as f:
+        json.dump({"type": "object"}, f)
 
     with open(json_file, "w", encoding="utf-8") as f:
-        json.dump(mock_json_data, f)
+        json.dump(mock_json_data, f, default=str)
 
-    loader = DemandDataLoader(json_file, Path("dummy_contract.json"))
+    loader = DemandDataLoader(json_file, contract_file)
 
     df = loader.load_and_process()
 
     assert len(df) == 4
 
     assert pd.api.types.is_datetime64_any_dtype(df[DayKey.DATE])
+    assert not df.empty
