@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ML Project Multi-Class Contract",
+  "type": "object",
+  "properties": {
+    "day_data": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Day"
+      }
+    }
+  },
+  "required": [
+    "day_data"
+  ],
+  "$defs": {
+    "Day": {
+      "type": "object",
+      "properties": {
+        "weather": {
+          "$ref": "#/$defs/Weather"
+        },
+        "sells": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Article"
+          },
+          "description": "Lista artykułów sprzedanych w danym dniu"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "day_of_week": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "is_working": {
+          "type": "boolean"
+        },
+        "is_next_day_working": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Weather": {
+      "type": "object",
+      "properties": {
+        "avg_temp": {
+          "type": "number",
+          "description": "Srednia temperatura w danym zakresie godzin"
+        },
+        "temp_amplitude": {
+          "type": "number",
+          "description": "Amplituda temperatury w danych zakresie godzin, dodatnia->tendencja wzrostowa, ujemna->tendencja spadkowa"
+        },
+        "rain": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Suma odpadów w danym zakresie godzin"
+        }
+      },
+      "required": [
+        "avg_temp",
+        "temp_amplitude"
+      ]
+    },
+    "Article": {
+      "type": "object",
+      "properties": {
+        "PLU": {
+          "type": "integer",
+          "description": "numer identyfikacyjny artykulu"
+        },
+        "category": {
+          "type": "integer",
+          "description": "id kategorii, do ktorej nalezy danym produkt"
+        },
+        "demand": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "liczba ile razy dany artykul zostal sprzedany"
+        },
+        "yesterday_demand": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "liczba ile razy dany artykul zostal sprzedany dzien wczesniej"
+        },
+        "week_ago_demand": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "liczba ile razy dany artykul zostal sprzedany tydzien temu"
+        }
+      },
+      "required": [
+        "PLU",
+        "category",
+        "demand",
+        "yesterday_demand",
+        "week_ago_demand"
+      ]
+    }
+  }
+}
