@@ -22,28 +22,28 @@ def mock_json_data() -> dict:
                         {
                             ArticleKey.PLU: 123,
                             ArticleKey.CATEGORY: 1,
-                            ArticleKey.AMOUNT: 25,
+                            ArticleKey.DEMAND: 25,
                             ArticleKey.YESTERDAY_DEMAND: 20,
                             ArticleKey.WEEK_AGO_DEMAND: 15,
                         },
                         {
                             ArticleKey.PLU: 456,
                             ArticleKey.CATEGORY: 2,
-                            ArticleKey.AMOUNT: 40,
+                            ArticleKey.DEMAND: 40,
                             ArticleKey.YESTERDAY_DEMAND: 35,
                             ArticleKey.WEEK_AGO_DEMAND: 30,
                         },
                         {
                             ArticleKey.PLU: 789,
                             ArticleKey.CATEGORY: 3,
-                            ArticleKey.AMOUNT: 10,
+                            ArticleKey.DEMAND: 10,
                             ArticleKey.YESTERDAY_DEMAND: 5,
                             ArticleKey.WEEK_AGO_DEMAND: 8,
                         },
                         {
                             ArticleKey.PLU: 101,
                             ArticleKey.CATEGORY: 1,
-                            ArticleKey.AMOUNT: 15,
+                            ArticleKey.DEMAND: 15,
                             ArticleKey.YESTERDAY_DEMAND: 10,
                             ArticleKey.WEEK_AGO_DEMAND: 12,
                         },
@@ -60,7 +60,9 @@ def mock_json_data() -> dict:
 
 def test_read_json_raises_error_if_file_missing():
     """Checks if FileNotFoundError is raised when the JSON file does not exist."""
-    loader = DemandDataLoader(Path("non_existent_file.json"))
+    loader = DemandDataLoader(
+        Path("non_existent_file.json"), Path("non_existent_contract.json")
+    )
 
     with pytest.raises(FileNotFoundError):
         loader._read_json()
@@ -68,7 +70,7 @@ def test_read_json_raises_error_if_file_missing():
 
 def test_flatten_data_raises_error_if_day_data_missing(mock_json_data: dict):
     """Checks protection against missing 'day_data' key in the JSON structure."""
-    loader = DemandDataLoader("dummy_path.json")
+    loader = DemandDataLoader(Path("dummy_path.json"), Path("dummy_contract.json"))
     bad_data: dict[str, list] = {"some_other_key": []}
 
     with pytest.raises(ValueError, match="found in the JSON data"):
@@ -77,7 +79,7 @@ def test_flatten_data_raises_error_if_day_data_missing(mock_json_data: dict):
 
 def test_flatten_data_creates_correct_flat_structure(mock_json_data: dict):
     """Checks if json data is correctly ftattened into a DataFrame"""
-    loader = DemandDataLoader("dummy_path.json")
+    loader = DemandDataLoader(Path("dummy_path.json"), Path("dummy_contract.json"))
 
     df = loader._flatten_data(mock_json_data)
 
@@ -97,7 +99,7 @@ def test_load_and_process_end_to_end(tmp_path: Path, mock_json_data: dict):
     with open(json_file, "w", encoding="utf-8") as f:
         json.dump(mock_json_data, f)
 
-    loader = DemandDataLoader(json_file)
+    loader = DemandDataLoader(json_file, Path("dummy_contract.json"))
 
     df = loader.load_and_process()
 
