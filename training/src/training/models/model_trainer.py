@@ -10,6 +10,8 @@ from xgboost import XGBRegressor
 from training.data.data_splitter import DataSplitter
 from training.features.preprocessor import DataProcessor
 
+from training.data.mock_data_generator import ArticleKey, DayKey
+
 
 class ModelType(str, Enum):
     LOG_LIN = "log_lin"
@@ -58,12 +60,16 @@ class ModelTrainer:
         X_train_proc = preprocessor.fit_transform(train_df)
         X_eval_proc = preprocessor.transform(eval_df)
 
-        drop_cols = ["amount", "date"]
+        target_col = ArticleKey.AMOUNT.value
+        date_col = DayKey.DATE.value
+
+        drop_cols = [target_col, date_col]
+
         X_train = X_train_proc.drop(columns=drop_cols).astype(float)
-        y_train = X_train_proc["amount"].astype(float)
+        y_train = X_train_proc[target_col].astype(float)
 
         X_eval = X_eval_proc.drop(columns=drop_cols).astype(float)
-        y_eval = X_eval_proc["amount"].astype(float)
+        y_eval = X_eval_proc[target_col].astype(float)
 
         return X_train, y_train, X_eval, y_eval
 
