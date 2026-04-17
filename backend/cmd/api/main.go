@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	//"github.com/m1kus3q/pubpredictor/backend/pkg/parser"
-	"github.com/m1kus3q/pubpredictor/backend/pkg/api"
+	api "github.com/m1kus3q/pubpredictor/backend/internal/handlers"
 
 	pb "github.com/m1kus3q/pubpredictor/backend/pkg/pb/ping/v1"
 )
