@@ -15,7 +15,8 @@ dependencies = [
     "xgboost (>=3.2.0,<4.0.0)",
     "numpy (>=2.4.4,<3.0.0)",
     "scipy (>=1.17.1,<2.0.0)",
-    "jsonschema (>=4.26.0,<5.0.0)"
+    "jsonschema (>=4.26.0,<5.0.0)",
+    "rfc3339-validator (>=0.1.4,<0.2.0)"
 ]
 
 [tool.poetry]
