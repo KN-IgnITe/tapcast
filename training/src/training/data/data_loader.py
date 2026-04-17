@@ -51,9 +51,10 @@ class DemandDataLoader:
             raise ValueError(f"No .{DayKey.DAY_DATA}' found in the JSON data")
 
         for day in day_data_list:
+
             base_features = self._extract_day_features(day)
 
-            for article in day.get(DayKey.SELLS, {}).get(DayKey.ARTICLES, []):
+            for article in day.get(DayKey.SELLS, {}):
                 row = base_features.copy()
                 row.update(self._extract_article_features(article))
                 flattened_records.append(row)
@@ -66,11 +67,17 @@ class DemandDataLoader:
         weather_features = self._extract_weather_features(data.get(DayKey.WEATHER, {}))
 
         features: Dict[str, Any] = {
-            DayKey.DATE: data.get(DayKey.DATE),
-            DayKey.DAY_OF_WEEK: data.get(DayKey.DAY_OF_WEEK),
+            DayKey.DATE: str(data.get(DayKey.DATE)),
+            DayKey.DAY_OF_WEEK: int(
+                data.get(
+                    DayKey.DAY_OF_WEEK,
+                    pd.Timestamp(data[DayKey.DATE]).dayofweek + 1,
+                )
+            ),
             DayKey.IS_WORKING: int(data.get(DayKey.IS_WORKING, 0)),
             DayKey.IS_NEXT_DAY_WORKING: int(data.get(DayKey.IS_NEXT_DAY_WORKING, 0)),
         }
+
         features.update(weather_features)
         return features
 
@@ -89,7 +96,7 @@ class DemandDataLoader:
             ArticleKey.CATEGORY: article.get(ArticleKey.CATEGORY),
             ArticleKey.YESTERDAY_DEMAND: article.get(ArticleKey.YESTERDAY_DEMAND),
             ArticleKey.WEEK_AGO_DEMAND: article.get(ArticleKey.WEEK_AGO_DEMAND),
-            ArticleKey.AMOUNT: article.get(ArticleKey.AMOUNT),
+            ArticleKey.DEMAND: article.get(ArticleKey.DEMAND),
         }
 
 
