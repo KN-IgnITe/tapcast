@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Any, Dict, List
+import jsonschema
 
 import pandas as pd
 
@@ -9,13 +10,14 @@ from training.data.mock_data_generator import ArticleKey, DayKey, WeatherKey
 
 class DemandDataLoader:
     file_path: Path
+    contract_path: Path
 
-    def __init__(self, file_path: str | Path) -> None:
+    def __init__(self, file_path: str | Path, contract_path: str | Path) -> None:
         self.file_path = Path(file_path)
+        self.contract_path = Path(contract_path)
 
     def load_and_process(self) -> pd.DataFrame:
         """load data from JSON and convert to flat DataFrame."""
-
         raw_data = self._read_json()
         df = self._flatten_data(raw_data)
 
@@ -28,8 +30,16 @@ class DemandDataLoader:
         if not self.file_path.exists():
             raise FileNotFoundError(f"File not found: {self.file_path}")
 
+        """Validate data according to the contract schema"""
         with open(self.file_path, "r", encoding="utf-8") as file:
-            return json.load(file)
+            data = json.load(file)
+        with open(self.contract_path, "r", encoding="utf-8") as contract_file:
+            contract = json.load(contract_file)
+            try:
+                jsonschema.validate(instance=data, schema=contract)
+            except jsonschema.ValidationError as e:
+                raise ValueError(f"Data validation error: {e}")
+        return data
 
     def _flatten_data(self, data: Dict[str, Any]) -> pd.DataFrame:
         """Flatten the nested JSON structure into a flat DataFrame"""
@@ -85,9 +95,10 @@ class DemandDataLoader:
 
 if __name__ == "__main__":
     data_path = Path(__file__).parents[3] / "data" / "raw" / "mocked_data.json"
+    contract_path = Path(__file__).parent / "contract.json"
 
     try:
-        loader = DemandDataLoader(data_path)
+        loader = DemandDataLoader(data_path, contract_path)
         df_flat = loader.load_and_process()
 
         print(
