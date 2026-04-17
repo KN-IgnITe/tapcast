@@ -24,7 +24,7 @@ class WeatherKey(str, Enum):
 class ArticleKey(str, Enum):
     PLU = "PLU"
     CATEGORY = "category"
-    AMOUNT = "amount"
+    DEMAND = "demand"
     YESTERDAY_DEMAND = "yesterday_demand"
     WEEK_AGO_DEMAND = "week_ago_demand"
 
@@ -191,15 +191,15 @@ class DemandGenerator:
                 + self.weights.week_ago * (log_week - log_base)
             )
 
-            amount = int(
+            demand = int(
                 random.lognormvariate(linear_prediction, self.sales_cfg.demand_variance)
             )
-            self.history[(product.plu, current_date)] = amount
+            self.history[(product.plu, current_date)] = demand
 
             articles_data: Dict[str, Any] = {
                 ArticleKey.PLU: product.plu,
                 ArticleKey.CATEGORY: product.category,
-                ArticleKey.AMOUNT: amount,
+                ArticleKey.DEMAND: demand,
                 ArticleKey.YESTERDAY_DEMAND: real_yesterday,
                 ArticleKey.WEEK_AGO_DEMAND: real_week_ago,
             }
@@ -211,6 +211,7 @@ class DemandGenerator:
 
 class MockDataOrchestrator:
     """Orchestrator for generating mock data, keeping history and correlations"""
+
     products: List[Product]
     weather_gen: WeatherGenerator
     demand_gen: DemandGenerator
