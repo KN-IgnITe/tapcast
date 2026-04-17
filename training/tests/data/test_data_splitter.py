@@ -11,7 +11,7 @@ def dummy_dataframe() -> pd.DataFrame:
     return pd.DataFrame({DayKey.DATE: dates, "value": range(100)})
 
 
-def test_get_final_test_split(dummy_dataframe: pd.DataFrame):
+def test_get_final_test_split(dummy_dataframe: pd.DataFrame) -> None:
     splitter = DataSplitter(test_size=0.2)
     train_df, test_df = splitter.get_final_test_split(dummy_dataframe)
 
@@ -20,7 +20,7 @@ def test_get_final_test_split(dummy_dataframe: pd.DataFrame):
     assert train_df[DayKey.DATE].max() < test_df[DayKey.DATE].min()
 
 
-def test_get_walk_forward_splits(dummy_dataframe: pd.DataFrame):
+def test_get_walk_forward_splits(dummy_dataframe: pd.DataFrame) -> None:
     splitter = DataSplitter(n_splits=5)
 
     splits = list(splitter.get_walk_forward_splits(dummy_dataframe))

@@ -58,7 +58,7 @@ def mock_json_data() -> dict:
     }
 
 
-def test_read_json_raises_error_if_file_missing():
+def test_read_json_raises_error_if_file_missing() -> None:
     """Checks if FileNotFoundError is raised when the JSON file does not exist."""
     loader = DemandDataLoader(
         Path("non_existent_file.json"), Path("non_existent_contract.json")
@@ -68,7 +68,7 @@ def test_read_json_raises_error_if_file_missing():
         loader._read_json()
 
 
-def test_flatten_data_raises_error_if_day_data_missing(mock_json_data: dict):
+def test_flatten_data_raises_error_if_day_data_missing(mock_json_data: dict) -> None:
     """Checks protection against missing 'day_data' key in the JSON structure."""
     loader = DemandDataLoader(Path("dummy_path.json"), Path("dummy_contract.json"))
     bad_data: dict[str, list] = {"some_other_key": []}
@@ -77,7 +77,7 @@ def test_flatten_data_raises_error_if_day_data_missing(mock_json_data: dict):
         loader._flatten_data(bad_data)
 
 
-def test_flatten_data_creates_correct_flat_structure(mock_json_data: dict):
+def test_flatten_data_creates_correct_flat_structure(mock_json_data: dict) -> None:
     """Checks if json data is correctly ftattened into a DataFrame"""
     loader = DemandDataLoader(Path("dummy_path.json"), Path("dummy_contract.json"))
 
@@ -92,7 +92,7 @@ def test_flatten_data_creates_correct_flat_structure(mock_json_data: dict):
     assert df.iloc[3][ArticleKey.PLU] == 101
 
 
-def test_load_and_process_end_to_end(tmp_path: Path, mock_json_data: dict):
+def test_load_and_process_end_to_end(tmp_path: Path, mock_json_data: dict) -> None:
     """End-to-end test for the entire loading and processing pipeline"""
     json_file = tmp_path / "mock_data.json"
 

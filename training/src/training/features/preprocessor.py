@@ -33,7 +33,7 @@ class DataProcessor:
             ArticleKey.PLU.value,
         ]
 
-        self.target_col = ArticleKey.AMOUNT.value
+        self.target_col = ArticleKey.DEMAND.value
 
         self.preprocessor = ColumnTransformer(
             transformers=[

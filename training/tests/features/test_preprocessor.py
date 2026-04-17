@@ -18,7 +18,7 @@ def dummy_train_data() -> pd.DataFrame:
             DayKey.DAY_OF_WEEK.value: [1, 2, 1],
             ArticleKey.CATEGORY.value: [1, 2, 3],
             ArticleKey.PLU.value: [101, 102, 101],
-            ArticleKey.AMOUNT.value: [12, 2, 55],
+            ArticleKey.DEMAND.value: [12, 2, 55],
             DayKey.DATE.value: ["2023-01-01", "2023-01-02", "2023-01-03"],
         }
     )
@@ -41,13 +41,13 @@ def dummy_test_data() -> pd.DataFrame:
             DayKey.DAY_OF_WEEK.value: [1],
             ArticleKey.CATEGORY.value: [1],
             ArticleKey.PLU.value: [999],
-            ArticleKey.AMOUNT.value: [15],
+            ArticleKey.DEMAND.value: [15],
             DayKey.DATE.value: ["2023-01-04"],
         }
     )
 
 
-def test_transform_raises_error_if_not_fitted(dummy_train_data: pd.DataFrame):
+def test_transform_raises_error_if_not_fitted(dummy_train_data: pd.DataFrame) -> None:
     """Test that transform raises an error if fit_transform has not been called."""
     processor = DataProcessor()
     with pytest.raises(
@@ -58,7 +58,7 @@ def test_transform_raises_error_if_not_fitted(dummy_train_data: pd.DataFrame):
 
 def test_apply_log_transformer_calculates_log1p_correctly(
     dummy_train_data: pd.DataFrame,
-):
+) -> None:
     """
     Test that _apply__log_transformer correctly applies
     np.log1p to the target column.
@@ -77,7 +77,7 @@ def test_apply_log_transformer_calculates_log1p_correctly(
     assert np.isclose(0.0, df_logged[yest_key].iloc[1])
 
 
-def test_fit_transform_creates_correct_columns(dummy_train_data: pd.DataFrame):
+def test_fit_transform_creates_correct_columns(dummy_train_data: pd.DataFrame) -> None:
     """Sprawdza End-to-End proces uczenia preprocesora na zbiorze treningowym."""
     processor = DataProcessor()
 
@@ -86,7 +86,7 @@ def test_fit_transform_creates_correct_columns(dummy_train_data: pd.DataFrame):
     assert processor.is_fitted is True
 
     # remainder passthrough collumns should be present
-    assert ArticleKey.AMOUNT.value in proc_df.columns
+    assert ArticleKey.DEMAND.value in proc_df.columns
     assert DayKey.DATE.value in proc_df.columns
 
     # one-hot encoded columns should be present
@@ -96,9 +96,9 @@ def test_fit_transform_creates_correct_columns(dummy_train_data: pd.DataFrame):
 
 def test_transform_ignores_unknown_categories(
     dummy_train_data: pd.DataFrame, dummy_test_data: pd.DataFrame
-):
+) -> None:
     """
-    Sprawdza, czy model poprawnie ignoruje nowe, 
+    Sprawdza, czy model poprawnie ignoruje nowe,
     niewidziane wcześnie kategorie (handle_unknown='ignore').
     """
     processor = DataProcessor()

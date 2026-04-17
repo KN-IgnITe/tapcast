@@ -25,13 +25,13 @@ def dummy_pipeline_data() -> pd.DataFrame:
             DayKey.DAY_OF_WEEK.value: np.random.randint(1, 8, 20),
             ArticleKey.CATEGORY.value: [1, 2] * 10,
             ArticleKey.PLU.value: [101, 102] * 10,
-            ArticleKey.AMOUNT.value: np.random.randint(10, 100, 20),
+            ArticleKey.DEMAND.value: np.random.randint(10, 100, 20),
             DayKey.DATE.value: dates,
         }
     )
 
 
-def test_get_model_returns_correct_instances():
+def test_get_model_returns_correct_instances() -> None:
     """Checks if factory method returns correct model"""
     trainer_log = ModelTrainer(ModelType.LOG_LIN)
 
@@ -41,12 +41,12 @@ def test_get_model_returns_correct_instances():
     assert isinstance(trainer_xgb._get_model(), XGBRegressor)
 
 
-def test_calculate_metrics_returns_expected_results():
+def test_calculate_metrics_returns_expected_results() -> None:
     """Checks if metrics are calculated correctly"""
     trainer = ModelTrainer(ModelType.LOG_LIN)
 
-    y_true = pd.Series([10, 20, 30])
-    y_pred = pd.Series([12.0, 18.0, 30.0])
+    y_true: pd.Series[int] = pd.Series([10, 20, 30])
+    y_pred: pd.Series[float] = pd.Series([12.0, 18.0, 30.0])
 
     metrics = trainer._calculate_metrics(y_true, y_pred)
 
@@ -60,7 +60,7 @@ def test_calculate_metrics_returns_expected_results():
 
 def test_run_walk_forward_training_executes_succesfully(
     dummy_pipeline_data: pd.DataFrame,
-):
+) -> None:
     """Checks if the entire pipeline runs without errors and returns metrics"""
     trainer = ModelTrainer(ModelType.LOG_LIN)
     splitter = DataSplitter(n_splits=2)
@@ -71,7 +71,9 @@ def test_run_walk_forward_training_executes_succesfully(
     assert avg_mae >= 0.0
 
 
-def test_evaluate_on_test_executes_succesfully(dummy_pipeline_data: pd.DataFrame):
+def test_evaluate_on_test_executes_succesfully(
+    dummy_pipeline_data: pd.DataFrame,
+) -> None:
     """Checks final evaluation on test with xgboost model"""
     trainer = ModelTrainer(ModelType.XGBOOST)
 

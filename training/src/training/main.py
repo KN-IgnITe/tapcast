@@ -6,9 +6,10 @@ from training.models.model_trainer import ModelTrainer, ModelType
 
 
 def main() -> None:
-    data_path = Path(__file__).parents[2] / "data" / "raw" / "mocked_data.json"
+    data_path = Path(__file__).parents[2] / "data" / "raw" / "test_data.json"
+    contract_path = Path(__file__).parent / "data" / "contract.json"
 
-    loader = DemandDataLoader(data_path)
+    loader = DemandDataLoader(data_path, contract_path)
     splitter = DataSplitter(test_size=0.15, n_splits=5)  # 85% train, 15% test
 
     # 1. Load data and process
