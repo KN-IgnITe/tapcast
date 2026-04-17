@@ -42,7 +42,14 @@
         "is_next_day_working": {
           "type": "boolean"
         }
-      }
+      },
+      "required": [
+        "date",
+        "weather",
+        "sells",
+        "is_working",
+        "is_next_day_working"
+      ]
     },
     "Weather": {
       "type": "object",
