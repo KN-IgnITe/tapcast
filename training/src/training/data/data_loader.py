@@ -36,7 +36,11 @@ class DemandDataLoader:
         with open(self.contract_path, "r", encoding="utf-8") as contract_file:
             contract = json.load(contract_file)
             try:
-                jsonschema.validate(instance=data, schema=contract)
+                jsonschema.validate(
+                    instance=data,
+                    schema=contract,
+                    format_checker=jsonschema.FormatChecker(),
+                )
             except jsonschema.ValidationError as e:
                 raise ValueError(f"Data validation error: {e}")
         return data
