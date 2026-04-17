@@ -28,6 +28,10 @@ pre-commit:
       root: "training/"
       glob: "*.py"
       run: poetry run mypy --disallow-untyped-defs {staged_files}
+    training-test:
+      root: "training/"
+      glob: "*.py"
+      run: poetry run pytest -v
 
     # Go: Backend
     backend-goimports:
@@ -38,6 +42,10 @@ pre-commit:
       root: "backend/"
       glob: "*.go"
       run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run {staged_files}
+    backend-test:
+      root: "backend/"
+      glob: "*.go"
+      run: go test -v ./...
 
     # TypeScript/React: Frontend
     frontend-prettier:
