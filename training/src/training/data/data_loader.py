@@ -60,14 +60,8 @@ class DemandDataLoader:
             base_features = self._extract_day_features(day)
 
             sells_key = DayKey.SELLS.value
-            sells_dict = day.get(sells_key, day.get(DayKey.SELLS, {}))
-
-            article_key = DayKey.ARTICLES.value
-            article_list = sells_dict.get(
-                article_key, sells_dict.get(DayKey.ARTICLES, [])
-            )
-
-            for article in article_list:
+            articles_list: List[Dict[str, int | float]] = day.get(sells_key, [])
+            for article in articles_list:
                 row = base_features.copy()
                 row.update(self._extract_article_features(article))
                 flattened_records.append(row)
@@ -103,7 +97,9 @@ class DemandDataLoader:
             WeatherKey.RAIN: float(weather.get(WeatherKey.RAIN, 0.0)),
         }
 
-    def _extract_article_features(self, article: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_article_features(
+        self, article: Dict[str, int | float]
+    ) -> Dict[str, Any]:
         return {
             ArticleKey.PLU: article.get(ArticleKey.PLU),
             ArticleKey.CATEGORY: article.get(ArticleKey.CATEGORY),
