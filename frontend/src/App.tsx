@@ -1,70 +1,88 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import { useState, useEffect } from "react";
 import "./App.css";
 
+type Joke = {
+    setup: string;
+    punchline: string;
+};
+
+export function Joke({ joke }: { joke: Joke | null }) {
+    if (!joke) return <p>Loading joke...</p>;
+
+    return (
+        <>
+            <p>{joke.setup}</p>
+            <p>{joke.punchline}</p>
+        </>
+    );
+}
+
 function App() {
-  const [count, setCount] = useState(0);
-  const [backendResponse, setBackendResponse] =
-    useState<string>("No response yet");
-  const [loading, setLoading] = useState(false);
+    const [count, setCount] = useState<number>(0);
+    const [joke, setJoke] = useState<Joke | null>(null);
 
-  const callBackend = async () => {
-    try {
-      setLoading(true);
-      const apiUrl = import.meta.env.VITE_API_URL;
-      const response = await fetch(`${apiUrl}/ping`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      setBackendResponse(JSON.stringify(data, null, 2));
-    } catch (error) {
-      setBackendResponse(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    const getJoke = async () => {
+        try {
+            const response = await fetch(
+                "https://official-joke-api.appspot.com/random_joke",
+            );
+            const data = await response.json();
+            setJoke(data);
+        } catch (error) {
+            console.error("failed to fetch joke: ", error);
+        }
+    };
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <button onClick={callBackend} disabled={loading}>
-          {loading ? "Calling backend..." : "Call Backend"}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-        <div
-          style={{ marginTop: "20px", padding: "10px", borderRadius: "4px" }}
-        >
-          <h3>Backend Response:</h3>
-          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-            {backendResponse}
-          </pre>
+    useEffect(() => {
+        // i love react
+        const getInitialJoke = async () => {
+            try {
+                const response = await fetch(
+                    "https://official-joke-api.appspot.com/random_joke",
+                );
+                const data = await response.json();
+                setJoke(data);
+            } catch (error) {
+                console.error("failed to fetch initial joke:", error);
+            }
+        };
+
+        getInitialJoke();
+    }, []);
+
+    return (
+        <div style={{ textAlign: "center", marginTop: "50px" }}>
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                }}
+            >
+                <span>Jaka mamy dzis pogode?</span>
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        gap: "10px",
+                    }}
+                >
+                    <button className="button" onClick={() => setCount(2317)}>
+                        spoko
+                    </button>
+                    <button className="button" onClick={() => setCount(5)}>
+                        meh
+                    </button>
+                </div>
+                <span>Twoja lodziarnia potrzebuje dzis {count} lodzikow</span>
+                <br />
+                <button className="button" onClick={getJoke}>
+                    Rzart
+                </button>
+                <Joke joke={joke} />
+            </div>
         </div>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  );
+    );
 }
 
 export default App;
