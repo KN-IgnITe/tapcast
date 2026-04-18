@@ -114,7 +114,7 @@ class DemandDataLoader:
 
 
 if __name__ == "__main__":
-    data_path = Path(__file__).parents[3] / "data" / "raw" / "mocked_data.json"
+    data_path = Path(__file__).parents[3] / "data" / "raw" / "test_data.json"
     contract_path = Path(__file__).parent / "contract.json"
 
     try:
