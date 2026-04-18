@@ -17,38 +17,36 @@ def mock_json_data() -> dict:
                     WeatherKey.TEMP_AMPLITUDE: 5.2,
                     WeatherKey.RAIN: 0.0,
                 },
-                DayKey.SELLS: {
-                    DayKey.ARTICLES: [
-                        {
-                            ArticleKey.PLU: 123,
-                            ArticleKey.CATEGORY: 1,
-                            ArticleKey.DEMAND: 25,
-                            ArticleKey.YESTERDAY_DEMAND: 20,
-                            ArticleKey.WEEK_AGO_DEMAND: 15,
-                        },
-                        {
-                            ArticleKey.PLU: 456,
-                            ArticleKey.CATEGORY: 2,
-                            ArticleKey.DEMAND: 40,
-                            ArticleKey.YESTERDAY_DEMAND: 35,
-                            ArticleKey.WEEK_AGO_DEMAND: 30,
-                        },
-                        {
-                            ArticleKey.PLU: 789,
-                            ArticleKey.CATEGORY: 3,
-                            ArticleKey.DEMAND: 10,
-                            ArticleKey.YESTERDAY_DEMAND: 5,
-                            ArticleKey.WEEK_AGO_DEMAND: 8,
-                        },
-                        {
-                            ArticleKey.PLU: 101,
-                            ArticleKey.CATEGORY: 1,
-                            ArticleKey.DEMAND: 15,
-                            ArticleKey.YESTERDAY_DEMAND: 10,
-                            ArticleKey.WEEK_AGO_DEMAND: 12,
-                        },
-                    ]
-                },
+                DayKey.SELLS: [
+                    {
+                        ArticleKey.PLU: 123,
+                        ArticleKey.CATEGORY: 1,
+                        ArticleKey.DEMAND: 25,
+                        ArticleKey.YESTERDAY_DEMAND: 20,
+                        ArticleKey.WEEK_AGO_DEMAND: 15,
+                    },
+                    {
+                        ArticleKey.PLU: 456,
+                        ArticleKey.CATEGORY: 2,
+                        ArticleKey.DEMAND: 40,
+                        ArticleKey.YESTERDAY_DEMAND: 35,
+                        ArticleKey.WEEK_AGO_DEMAND: 30,
+                    },
+                    {
+                        ArticleKey.PLU: 789,
+                        ArticleKey.CATEGORY: 3,
+                        ArticleKey.DEMAND: 10,
+                        ArticleKey.YESTERDAY_DEMAND: 5,
+                        ArticleKey.WEEK_AGO_DEMAND: 8,
+                    },
+                    {
+                        ArticleKey.PLU: 101,
+                        ArticleKey.CATEGORY: 1,
+                        ArticleKey.DEMAND: 15,
+                        ArticleKey.YESTERDAY_DEMAND: 10,
+                        ArticleKey.WEEK_AGO_DEMAND: 12,
+                    },
+                ],
                 DayKey.DATE: "2023-01-01",
                 DayKey.DAY_OF_WEEK: "3",
                 DayKey.IS_WORKING: True,
