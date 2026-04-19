@@ -5,8 +5,8 @@ import (
 )
 
 type Article struct {
-	PLU   string  `json:"plu"`
-	Group string  `json:"group"`
+	PLU      string  `json:"plu"`
+	Group    string  `json:"group"`
 	Quantity float64 `json:"quantity"`
 }
 
