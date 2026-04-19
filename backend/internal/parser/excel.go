@@ -103,9 +103,9 @@ func (p *Parser) extractArticlesFromColumn(rows [][]string, colIndex int) []Arti
 		}
 
 		pluCell := getCell(rows[r], p.ColEIndex)
-		
+
 		if strings.Contains(strings.ToLower(pluCell), "razem") {
-			currentPLU = "" 
+			currentPLU = ""
 			continue
 		}
 		if pluCell != "" {
