@@ -11,18 +11,18 @@ import (
 )
 
 type Parser struct {
-	ColAIndex int
-	ColEIndex int
-	ColRIndex int
-	StartRow  int
+	GroupColumnIndex     int
+	PLUColumnIndex       int
+	FirstDateColumnIndex int
+	FirstDataRowIndex    int
 }
 
 func NewParser() *Parser {
 	return &Parser{
-		ColAIndex: 0,
-		ColEIndex: 4,
-		ColRIndex: 17,
-		StartRow:  3,
+		GroupColumnIndex:     0,  // Kolumna A
+		PLUColumnIndex:       4,  // Kolumna E
+		FirstDateColumnIndex: 17, // Kolumna R
+		FirstDataRowIndex:    3,  // Dane zaczynają się od wiersza 4 (indeks 3)
 	}
 }
 
@@ -52,12 +52,12 @@ func (p *Parser) Parse(r io.Reader) (Raport, error) {
 		return raport, fmt.Errorf("plik nie posiada wystarczającej liczby wierszy")
 	}
 
-	row2 := rows[1]
-	row3 := rows[2]
-	maxCols := len(row3)
+	indicatorRow := rows[1] // Wiersz określający czy to nowy dzień (zawiera nazwy zmiany np. 349)
+	datesRow := rows[2]     // Wiersz zawierający daty
+	maxCols := len(datesRow)
 
-	for c := p.ColRIndex; c < maxCols; c++ {
-		dateStr := getCell(row3, c)
+	for colIdx := p.FirstDateColumnIndex; colIdx < maxCols; colIdx++ {
+		dateStr := getCell(datesRow, colIdx)
 		if dateStr == "" {
 			continue
 		}
@@ -67,10 +67,10 @@ func (p *Parser) Parse(r io.Reader) (Raport, error) {
 			continue
 		}
 
-		valRow2 := getCell(row2, c)
-		isNewDay := valRow2 != ""
+		dayIndicator := getCell(indicatorRow, colIdx)
+		isNewDay := dayIndicator != ""
 
-		articles := p.extractArticlesFromColumn(rows, c)
+		articles := p.extractArticlesFromColumn(rows, colIdx)
 
 		if isNewDay {
 			newDay := Day{
@@ -79,6 +79,7 @@ func (p *Parser) Parse(r io.Reader) (Raport, error) {
 			}
 			p.mergeArticles(&newDay, articles)
 			raport.Days = append(raport.Days, newDay)
+
 		} else {
 			if len(raport.Days) == 0 {
 				continue
@@ -91,23 +92,26 @@ func (p *Parser) Parse(r io.Reader) (Raport, error) {
 	return raport, nil
 }
 
-func (p *Parser) extractArticlesFromColumn(rows [][]string, colIndex int) []Article {
+func (p *Parser) extractArticlesFromColumn(rows [][]string, quantityColIdx int) []Article {
 	var articles []Article
-	currentGroup := ""
-	currentPLU := ""
+	currentGroup := "" //group jest tylko w jedym wierszu i potem jest puste az nie pojawi sie nowy grup
+	currentPLU := "" // nieraz jest PLU a nizej jest puste ale to puste tez jest tym PLU wiec tak samo
 
-	for r := p.StartRow; r < len(rows); r++ {
-		colA := getCell(rows[r], p.ColAIndex)
-		if colA != "" && !strings.Contains(strings.ToLower(colA), "razem") {
-			currentGroup = colA
+	for rowIdx := p.FirstDataRowIndex; rowIdx < len(rows); rowIdx++ {
+		groupCell := getCell(rows[rowIdx], p.GroupColumnIndex)
+		// pomijamy nazwe zmiany RAZEM bo manualnie dodajemy z dat w na jednej zmianie 
+		if groupCell != "" && !strings.Contains(strings.ToLower(groupCell), "razem") {
+			currentGroup = groupCell
 		}
 
-		pluCell := getCell(rows[r], p.ColEIndex)
+		pluCell := getCell(rows[rowIdx], p.PLUColumnIndex)
 
+		//pomijamy PLU razem bo jest bez sensu
 		if strings.Contains(strings.ToLower(pluCell), "razem") {
 			currentPLU = ""
 			continue
 		}
+		
 		if pluCell != "" {
 			currentPLU = pluCell
 		}
@@ -116,16 +120,16 @@ func (p *Parser) extractArticlesFromColumn(rows [][]string, colIndex int) []Arti
 			continue
 		}
 
-		qtyStr := getCell(rows[r], colIndex)
-		if qtyStr != "" {
-			qtyStr = strings.ReplaceAll(qtyStr, ",", ".")
-			qty, err := strconv.ParseFloat(qtyStr, 64)
+		quantityStr := getCell(rows[rowIdx], quantityColIdx)
+		if quantityStr != "" {
+			quantityStr = strings.ReplaceAll(quantityStr, ",", ".")
+			quantity, err := strconv.ParseFloat(quantityStr, 64)
 
-			if err == nil && qty != 0 {
+			if err == nil && quantity != 0 {
 				articles = append(articles, Article{
 					PLU:      currentPLU,
 					Group:    currentGroup,
-					Quantity: qty,
+					Quantity: quantity,
 				})
 			}
 		}
