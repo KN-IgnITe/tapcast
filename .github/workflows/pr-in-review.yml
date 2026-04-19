@@ -17,6 +17,6 @@ jobs:
           organization: KN-IGNITe
           project_id: 4
           resource_node_id: ${{ github.event.pull_request.node_id }}
-          operation_mode: custom_field
-          custom_field_name: Status
-          custom_field_value: 'In Review'
+          status_value: 'In Review'
+
+

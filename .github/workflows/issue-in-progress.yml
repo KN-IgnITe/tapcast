@@ -51,6 +51,4 @@ jobs:
           organization: KN-IGNITe
           project_id: 4
           resource_node_id: ${{ steps.get_issue.outputs.node_id }}
-          operation_mode: custom_field
-          custom_field_name: Status
-          custom_field_value: 'In Progress'
+          status_value: 'In Progress'
