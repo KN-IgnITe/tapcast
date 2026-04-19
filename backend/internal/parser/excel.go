@@ -95,11 +95,11 @@ func (p *Parser) Parse(r io.Reader) (Raport, error) {
 func (p *Parser) extractArticlesFromColumn(rows [][]string, quantityColIdx int) []Article {
 	var articles []Article
 	currentGroup := "" //group jest tylko w jedym wierszu i potem jest puste az nie pojawi sie nowy grup
-	currentPLU := "" // nieraz jest PLU a nizej jest puste ale to puste tez jest tym PLU wiec tak samo
+	currentPLU := ""   // nieraz jest PLU a nizej jest puste ale to puste tez jest tym PLU wiec tak samo
 
 	for rowIdx := p.FirstDataRowIndex; rowIdx < len(rows); rowIdx++ {
 		groupCell := getCell(rows[rowIdx], p.GroupColumnIndex)
-		// pomijamy nazwe zmiany RAZEM bo manualnie dodajemy z dat w na jednej zmianie 
+		// pomijamy nazwe zmiany RAZEM bo manualnie dodajemy z dat w na jednej zmianie
 		if groupCell != "" && !strings.Contains(strings.ToLower(groupCell), "razem") {
 			currentGroup = groupCell
 		}
@@ -111,7 +111,7 @@ func (p *Parser) extractArticlesFromColumn(rows [][]string, quantityColIdx int) 
 			currentPLU = ""
 			continue
 		}
-		
+
 		if pluCell != "" {
 			currentPLU = pluCell
 		}
