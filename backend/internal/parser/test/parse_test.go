@@ -53,7 +53,7 @@ func TestParseExcelToStruct(t *testing.T) {
 	} else {
 		expectedQty := 5.0
 		if foundArticle.Quantity != expectedQty {
-			t.Errorf("Błędna ilość dla PLU 539 w dniu 01.09.2025. Oczekiwano: %.2f, otrzymano: %.2f", 
+			t.Errorf("Błędna ilość dla PLU 539 w dniu 01.09.2025. Oczekiwano: %.2f, otrzymano: %.2f",
 				expectedQty, foundArticle.Quantity)
 		}
 	}
