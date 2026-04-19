@@ -1,0 +1,22 @@
+name: Move PR to In Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+
+jobs:
+  move-to-in-review:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: Update Project Status
+        uses: leonsteinhaeuser/project-beta-automations@v2.2.1
+        with:
+          gh_token: ${{ secrets.PAT_TOKEN }}
+          organization: KN-IGNITe
+          project_id: 4
+          resource_node_id: ${{ github.event.pull_request.node_id }}
+          status_value: 'In Review'
+
+
