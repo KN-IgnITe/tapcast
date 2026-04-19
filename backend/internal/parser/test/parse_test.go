@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/m1kus3q/pubpredictor/backend/internal/parser"
-
 )
 
 func TestParseExcelToStruct(t *testing.T) {
@@ -30,6 +29,6 @@ func TestParseExcelToStruct(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Nie udało się zrzutować wyniku do JSON: %v", err)
 	}
-	
+
 	t.Logf("Sparsowany raport:\n%s", string(jsonData))
 }
