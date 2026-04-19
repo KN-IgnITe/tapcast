@@ -1,68 +1,86 @@
 pre-commit:
-  parallel: true
+  piped: true
   commands:
     # Python: Inference
     inference-black:
+      priority: 1
       root: "inference/"
       glob: "*.py"
       run: poetry run black {staged_files}
+      stage_fixed: true
     inference-flake8:
+      priority: 2
       root: "inference/"
       glob: "*.py"
       run: poetry run flake8 {staged_files}
     inference-mypy:
+      priority: 2
       root: "inference/"
       glob: "*.py"
       run: poetry run mypy {staged_files}
 
     # Python: Training
     training-black:
+      priority: 1
       root: "training/"
       glob: "*.py"
       run: poetry run black {staged_files}
+      stage_fixed: true
     training-flake8:
+      priority: 2
       root: "training/"
       glob: "*.py"
       run: poetry run flake8 {staged_files}
     training-mypy:
+      priority: 2
       root: "training/"
       glob: "*.py"
       run: poetry run mypy --disallow-untyped-defs {staged_files}
     training-test:
+      priority: 3
       root: "training/"
       glob: "*.py"
       run: poetry run pytest -v
 
     # Go: Backend
     backend-goimports:
+      priority: 1
       root: "backend/"
       glob: "*.go"
       run: go run golang.org/x/tools/cmd/goimports@latest -w {staged_files}
+      stage_fixed: true
     backend-golangci-lint:
+      priority: 2
       root: "backend/"
       glob: "*.go"
       run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run {staged_files}
     backend-test:
+      priority: 3
       root: "backend/"
       glob: "*.go"
       run: go test -v ./...
 
     # TypeScript/React: Frontend
     frontend-prettier:
+      priority: 1
       root: "frontend/"
       glob: "*.{ts,tsx,js,jsx,css,html}"
       run: npx prettier --write {staged_files}
+      stage_fixed: true
     frontend-eslint:
+      priority: 2
       root: "frontend/"
       glob: "*.{ts,tsx,js,jsx}"
       run: npx eslint {staged_files}
     frontend-tsc:
+      priority: 2
       root: "frontend/"
       glob: "*.{ts,tsx}"
       run: npx tsc --noEmit
 
     # MkDocs: Documentation
     docs-mkdocs:
+      priority: 1
       root: "docs/"
       glob: "*.{md,markdown}"
       run: docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:latest --fix {staged_files}
