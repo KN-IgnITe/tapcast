@@ -2,21 +2,14 @@ package tests
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"testing"
 
-	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func TestDatabaseConnection(t *testing.T) {
-	err := godotenv.Load("../../../../.env")
-
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
 
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
