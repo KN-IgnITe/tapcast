@@ -36,7 +36,6 @@ class DayKey(str, Enum):
     DAY_OF_WEEK = "day_of_week"
     IS_WORKING = "is_working"
     IS_NEXT_DAY_WORKING = "is_next_day_working"
-    ARTICLES = "articles"
     DAY_DATA = "day_data"
 
 
@@ -154,7 +153,7 @@ class DemandGenerator:
     def generate(
         self, current_date: date, weather: Dict[str, float]
     ) -> List[Dict[str, Any]]:
-        articles = []
+        sells = []
         today_weekday = current_date.weekday()
         yesterday_date = current_date - timedelta(days=1)
         weak_ago_date = current_date - timedelta(days=7)
@@ -204,9 +203,9 @@ class DemandGenerator:
                 ArticleKey.WEEK_AGO_DEMAND: real_week_ago,
             }
 
-            articles.append(articles_data)
+            sells.append(articles_data)
 
-        return articles
+        return sells
 
 
 class MockDataOrchestrator:
@@ -239,7 +238,7 @@ class MockDataOrchestrator:
 
         return {
             DayKey.WEATHER: daily_weather,
-            DayKey.SELLS: {DayKey.ARTICLES: articles_data},
+            DayKey.SELLS: articles_data,
             DayKey.DATE: current_date.strftime("%Y-%m-%d"),
             DayKey.DAY_OF_WEEK: current_date.isoweekday(),
             DayKey.IS_WORKING: self._is_working_day(current_date),
@@ -258,7 +257,7 @@ class MockDataOrchestrator:
             for i in range(num_days)
         ]
 
-        return {"DayKey.DAY_DATA": day_data_list}
+        return {DayKey.DAY_DATA: day_data_list}
 
 
 def save_mock_data_to_json(
