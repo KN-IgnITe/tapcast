@@ -1,20 +1,27 @@
-package models
+package tests
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"testing"
 
+	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func TestDatabaseConnection(t *testing.T) {
-	dsn := os.Getenv("DATABASE_URL")
+	err := godotenv.Load("../../../../.env")
 
-	if dsn == "" {
-		t.Fatal("DATABASE_URL is not set")
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		os.Getenv("DB_HOST"), os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("DB_NAME"), os.Getenv("DB_PORT"),
+	)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
@@ -30,4 +37,5 @@ func TestDatabaseConnection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("database ping failed: %v", err)
 	}
+
 }
