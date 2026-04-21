@@ -7,13 +7,16 @@ type Joke = {
 };
 
 export function Joke({ joke }: { joke: Joke | null }) {
-    if (!joke) return <p>Loading joke...</p>;
+    if (!joke)
+        return (
+            <p className="text-gray-500 animate-pulse">Ładowanie żartu...</p>
+        );
 
     return (
-        <>
-            <p>{joke.setup}</p>
-            <p>{joke.punchline}</p>
-        </>
+        <div className="mt-6 p-4 bg-white rounded-xl shadow-md border border-gray-100">
+            <p className="font-medium text-gray-800 italic">"{joke.setup}"</p>
+            <p className="mt-2 font-bold text-indigo-600">{joke.punchline}</p>
+        </div>
     );
 }
 
@@ -51,34 +54,43 @@ function App() {
     }, []);
 
     return (
-        <div style={{ textAlign: "center", marginTop: "50px" }}>
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px",
-                }}
-            >
-                <span>Jaka mamy dzis pogode?</span>
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        gap: "10px",
-                    }}
-                >
-                    <button className="button" onClick={() => setCount(2317)}>
+        // zamiast style={{ textAlign: "center" ... }}
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans">
+            <div className="w-full max-w-md flex flex-col gap-6 text-center">
+                <span className="text-xl font-semibold text-slate-700">
+                    Jaka mamy dziś pogodę?
+                </span>
+
+                <div className="flex justify-center gap-4">
+                    <button
+                        className="px-6 py-2 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors shadow-lg"
+                        onClick={() => setCount(2317)}
+                    >
                         spoko
                     </button>
-                    <button className="button" onClick={() => setCount(5)}>
+                    <button
+                        className="px-6 py-2 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors shadow-lg"
+                        onClick={() => setCount(5)}
+                    >
                         meh
                     </button>
                 </div>
-                <span>Twoja lodziarnia potrzebuje dzis {count} lodzikow</span>
-                <br />
-                <button className="button" onClick={getJoke}>
-                    Rzart
+
+                <span className="text-lg text-slate-600">
+                    Twoja lodziarnia potrzebuje dziś{" "}
+                    <strong className="text-indigo-600 text-2xl px-2">
+                        {count}
+                    </strong>{" "}
+                    lodzików
+                </span>
+
+                <button
+                    className="mt-4 px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:scale-105 transition-transform active:bg-indigo-700 shadow-xl"
+                    onClick={getJoke}
+                >
+                    Nowy żart!
                 </button>
+
                 <Joke joke={joke} />
             </div>
         </div>
