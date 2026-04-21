@@ -237,14 +237,14 @@ class MockDataOrchestrator:
         articles_data = self.demand_gen.generate(current_date, daily_weather)
 
         return {
-            DayKey.WEATHER: daily_weather,
-            DayKey.SELLS: articles_data,
             DayKey.DATE: current_date.strftime("%Y-%m-%d"),
             DayKey.DAY_OF_WEEK: current_date.isoweekday(),
             DayKey.IS_WORKING: self._is_working_day(current_date),
             DayKey.IS_NEXT_DAY_WORKING: self._is_working_day(
                 current_date + timedelta(days=1)
             ),
+            DayKey.WEATHER: daily_weather,
+            DayKey.SELLS: articles_data,
         }
 
     def generate_mock_data(
