@@ -10,6 +10,12 @@ import (
 )
 
 func TestDatabaseConnection(t *testing.T) {
+	requiredEnvVars := []string{"DB_HOST", "POSTGRES_USER", "POSTGRES_PASSWORD", "DB_NAME", "DB_PORT"}
+	for _, envVar := range requiredEnvVars {
+		if os.Getenv(envVar) == "" {
+			t.Fatalf("required environment variable %s is not set", envVar)
+		}
+	}
 
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
