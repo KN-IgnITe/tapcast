@@ -2,7 +2,7 @@ name: Update Issue Status on PR
 
 on:
   pull_request:
-    # Akcja uruchomi się przy otwarciu, wyjściu z draftu i powrocie do draftu
+    # Action runs on opening, marking as ready, and converting to draft
     types: [opened, ready_for_review, reopened, converted_to_draft]
 
 jobs:
@@ -17,11 +17,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const branchName = context.payload.pull_request.head.ref;
-            console.log(`Gałąź PR-a: ${branchName}`);
+            console.log(`PR branch: ${branchName}`);
             
             const match = branchName.match(/\b(\d+)\b/);
             if (!match) {
-              console.log("Nie znaleziono numeru zadania w nazwie gałęzi. Pomijam.");
+              console.log("No issue number found in branch name. Skipping.");
               return;
             }
             
@@ -35,13 +35,13 @@ jobs:
               });
               
               core.setOutput('node_id', issue.node_id);
-              console.log(`Znaleziono Issue #${issueNum}. Przekazuję do tablicy...`);
+              console.log(`Found Issue #${issueNum}. Moving to project board...`);
             } catch (error) {
-              console.log(`Zgłoszenie #${issueNum} nie istnieje.`);
+              console.log(`Issue #${issueNum} does not exist.`);
             }
 
       - name: Determine Target Column
-        # Ustawiamy zmienną w zależności od tego, czy PR to Draft
+        # Set variable depending on whether the PR is a Draft
         id: status
         run: |
           if [ "${{ github.event.pull_request.draft }}" == "true" ]; then
@@ -59,4 +59,3 @@ jobs:
           project_id: 4
           resource_node_id: ${{ steps.get_issue.outputs.node_id }}
           status_value: ${{ env.STATUS_VALUE }}
-
