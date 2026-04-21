@@ -10,65 +10,134 @@ import (
 	"time"
 )
 
-// Client implementuje interfejs WeatherClient.
+// implements WeatherClient interface
 type Client struct {
-	BaseURL    string
-	HTTPClient *http.Client
+	ForecastURL string
+	ArchiveURL  string
+	HTTPClient  *http.Client
 }
 
-// NewClient tworzy nową instancję klienta z domyślnym timeoutem zapobiegającym zawieszeniu.
+// creates a new instance of Client
 func NewClient() *Client {
 	return &Client{
-		BaseURL: OpenMeteoBaseURL,
+		ForecastURL: OpenMeteoForecastURL,
+		ArchiveURL:  OpenMeteoArchiveURL,
 		HTTPClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}
 }
 
-// FetchForecast pobiera i deserializuje dane pogodowe.
-func (c *Client) FetchForecast(ctx context.Context, lat, lon float64) (*ForecastResponse, error) {
-	// Budowa zapytania
-	reqURL, err := url.Parse(c.BaseURL)
+// retrieves current weather conditions
+func (c *Client) FetchCurrentWeather(ctx context.Context, lat, lon float64) (*CurrentWeatherSummary, error) {
+	reqURL, err := url.Parse(c.ForecastURL)
 	if err != nil {
-		return nil, fmt.Errorf("parsing base url: %w", err)
+		return nil, fmt.Errorf("parsing forecast url: %w", err)
 	}
 
 	q := reqURL.Query()
 	q.Add("latitude", strconv.FormatFloat(lat, 'f', 4, 64))
 	q.Add("longitude", strconv.FormatFloat(lon, 'f', 4, 64))
-
-	// Deklaracja wymaganych zmiennych zgodnie ze strukturami Go
-	q.Add("current", "temperature_2m,apparent_temperature,is_day,precipitation,weathercode,wind_speed_10m")
-	q.Add("hourly", "temperature_2m,apparent_temperature,precipitation_probability,precipitation,weathercode,cloud_cover,wind_speed_10m")
-	q.Add("daily", "weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_hours")
-	q.Add("timezone", "auto")
-
+	q.Add("current", "temperature_2m,precipitation")
 	reqURL.RawQuery = q.Encode()
 
-	// Inicjalizacja żądania z Contextem
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating request: %w", err)
+	var resp CurrentAPIResponse
+	if err := c.doRequest(ctx, reqURL.String(), &resp); err != nil {
+		return nil, err
 	}
 
-	// http request
+	return &CurrentWeatherSummary{
+		Date:        resp.Current.Time,
+		Temperature: resp.Current.Temperature2M,
+		Rain:        resp.Current.Precipitation,
+	}, nil
+}
+
+// retrieves weather forecast for a given number of days
+func (c *Client) FetchFutureWeather(ctx context.Context, lat, lon float64, days int) ([]WeatherSummary, error) {
+	reqURL, err := url.Parse(c.ForecastURL)
+	if err != nil {
+		return nil, fmt.Errorf("parsing forecast url: %w", err)
+	}
+
+	q := reqURL.Query()
+	q.Add("latitude", strconv.FormatFloat(lat, 'f', 4, 64))
+	q.Add("longitude", strconv.FormatFloat(lon, 'f', 4, 64))
+	q.Add("daily", "temperature_2m_max,temperature_2m_min,precipitation_sum")
+	q.Add("forecast_days", strconv.Itoa(days))
+	q.Add("timezone", "auto")
+	reqURL.RawQuery = q.Encode()
+
+	var resp DailyAPIResponse
+	if err := c.doRequest(ctx, reqURL.String(), &resp); err != nil {
+		return nil, err
+	}
+
+	return summarizeWeather(resp.Daily), nil
+}
+
+// retrieves past weather data within a specific date range
+func (c *Client) FetchHistoricalWeather(ctx context.Context, lat, lon float64, startDate, endDate time.Time) ([]WeatherSummary, error) {
+	reqURL, err := url.Parse(c.ArchiveURL)
+	if err != nil {
+		return nil, fmt.Errorf("parsing archive url: %w", err)
+	}
+
+	q := reqURL.Query()
+	q.Add("latitude", strconv.FormatFloat(lat, 'f', 4, 64))
+	q.Add("longitude", strconv.FormatFloat(lon, 'f', 4, 64))
+	// Open-Meteo requires YYYY-MM-DD format
+	q.Add("start_date", startDate.Format(time.DateOnly))
+	q.Add("end_date", endDate.Format(time.DateOnly))
+	q.Add("daily", "temperature_2m_max,temperature_2m_min,precipitation_sum")
+	q.Add("timezone", "auto")
+	reqURL.RawQuery = q.Encode()
+
+	var resp DailyAPIResponse
+	if err := c.doRequest(ctx, reqURL.String(), &resp); err != nil {
+		return nil, err
+	}
+
+	return summarizeWeather(resp.Daily), nil
+}
+
+// is a helper method to handle HTTP execution and JSON decoding
+func (c *Client) doRequest(ctx context.Context, targetURL string, target interface{}) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
+	if err != nil {
+		return fmt.Errorf("creating request: %w", err)
+	}
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("executing request: %w", err)
+		return fmt.Errorf("executing request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// validate status
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected http status: %d", resp.StatusCode)
+		return fmt.Errorf("unexpected http status: %d", resp.StatusCode)
 	}
 
-	// deserialize data
-	var forecast ForecastResponse
-	if err := json.NewDecoder(resp.Body).Decode(&forecast); err != nil {
-		return nil, fmt.Errorf("decoding response: %w", err)
+	if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
+		return fmt.Errorf("decoding response: %w", err)
 	}
 
-	return &forecast, nil
+	return nil
+}
+
+// transforms raw Open-Meteo daily arrays into business logic slice
+func summarizeWeather(daily RawDailyData) []WeatherSummary {
+	var summaries []WeatherSummary
+	for i := range daily.Time {
+		max := daily.Temperature2MMax[i]
+		min := daily.Temperature2MMin[i]
+
+		summaries = append(summaries, WeatherSummary{
+			Date:          daily.Time[i],
+			AvgTemp:       (max + min) / 2.0, // Calculate average
+			TempAmplitude: max - min,         // Calculate amplitude
+			Rain:          daily.PrecipitationSum[i],
+		})
+	}
+	return summaries
 }
