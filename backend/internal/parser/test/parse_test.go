@@ -42,7 +42,6 @@ func TestParseExcelToStruct(t *testing.T) {
 		t.Fatalf("Test nieudany: w raporcie nie znaleziono daty 01.09.2025")
 	}
 
-
 	for i := range foundDay.Articles {
 		if foundDay.Articles[i].PLU == "539" {
 			foundArticle = &foundDay.Articles[i]
@@ -60,7 +59,6 @@ func TestParseExcelToStruct(t *testing.T) {
 		}
 	}
 
-
 	//testowanie dnia pierwszego po fixie zeby od 1 dnia zczytywac
 
 	targetDate = time.Date(2025, 1, 3, 0, 0, 0, 0, time.UTC)
@@ -72,10 +70,9 @@ func TestParseExcelToStruct(t *testing.T) {
 		}
 	}
 
-	if foundDay == nil{
+	if foundDay == nil {
 		t.Fatalf("Test nieudany: w raporcie nie znaleziono daty 01.03.2025")
 	}
-
 
 	for i := range foundDay.Articles {
 		if foundDay.Articles[i].PLU == "537" {
@@ -84,7 +81,7 @@ func TestParseExcelToStruct(t *testing.T) {
 		}
 	}
 
-	if foundArticle == nil{
+	if foundArticle == nil {
 		t.Errorf("W dniu 03.01.2025 nie znaleziono artykułu o PLU 537")
 	} else {
 		expectedQty := 3.0
@@ -93,9 +90,5 @@ func TestParseExcelToStruct(t *testing.T) {
 				expectedQty, foundArticle.Quantity)
 		}
 	}
-	
-
-
-
 
 }
