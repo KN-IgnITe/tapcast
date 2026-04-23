@@ -21,7 +21,7 @@ func NewParser() *Parser {
 	return &Parser{
 		GroupColumnIndex:     0,  // Kolumna A
 		PLUColumnIndex:       4,  // Kolumna E
-		FirstDateColumnIndex: 17, // Kolumna R
+		FirstDateColumnIndex: 7, // Kolumna H pierwsza data
 		FirstDataRowIndex:    3,  // Dane zaczynają się od wiersza 4 (indeks 3)
 	}
 }
