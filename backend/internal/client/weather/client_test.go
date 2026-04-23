@@ -34,10 +34,14 @@ func TestProcessDailyData(t *testing.T) {
 		},
 	}
 
-	result := summarizeWeather(input)
+	result, err := summarizeWeather(input)
+
+	if err != nil {
+		t.Fatalf("nieoczekiwany błąd walidacji: %v", err)
+	}
 
 	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("processDailyData() mismatch.\nExpected: %+v\nGot: %+v", expected, result)
+		t.Errorf("summarizeWeather() mismatch.\nExpected: %+v\nGot: %+v", expected, result)
 	}
 }
 
@@ -183,5 +187,67 @@ func TestDoRequest_InvalidJSON(t *testing.T) {
 
 	if err == nil {
 		t.Error("expected error for invalid JSON, got nil")
+	}
+}
+
+// Checks client's URL
+func TestFetchFutureWeather_ExpectedRequest(t *testing.T) {
+	// mock server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// method validation
+		if r.Method != http.MethodGet {
+			t.Errorf("Expected GET method, got %s", r.Method)
+		}
+
+		// URL parameters validation
+		query := r.URL.Query()
+
+		if query.Get("latitude") != "51.1078" {
+			t.Errorf("Incorrect latitude: %s", query.Get("latitude"))
+		}
+		if query.Get("longitude") != "17.0385" {
+			t.Errorf("Incorrect longitude: %s", query.Get("longitude"))
+		}
+		if query.Get("forecast_days") != "3" {
+			t.Errorf("Expected forecast_days=3, got %s", query.Get("forecast_days"))
+		}
+
+		// return anything with a valid structure so the client doesn't crash during parsing
+		dummyJSON := `{"daily": {"time": ["2023-10-28"], "temperature_2m_max": [22], "temperature_2m_min": [12], "precipitation_sum": [0]}}`
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, dummyJSON)
+	}))
+	defer server.Close()
+
+	client := NewClient()
+	client.ForecastURL = server.URL
+
+	// execute the function (requesting 3 days)
+	ctx := context.Background()
+	_, err := client.FetchFutureWeather(ctx, DefaultLat, DefaultLon, 3)
+
+	if err != nil {
+		t.Fatalf("Unexpected error while testing the request: %v", err)
+	}
+}
+
+func TestSummarizeWeather_ValidationError(t *testing.T) {
+	// Invalid data missing one value from max temperature
+	badInput := RawDailyData{
+		Time:             []string{"2023-10-01", "2023-10-02"},
+		Temperature2MMax: []float64{20.0},
+		Temperature2MMin: []float64{10.0, -2.0},
+		PrecipitationSum: []float64{5.5, 0.0},
+	}
+
+	result, err := summarizeWeather(badInput)
+
+	if err == nil {
+		t.Error("Expected validation error, got nil")
+	}
+
+	// Oczekujemy, że wynik będzie pusty, skoro walidacja nie przeszła
+	if result != nil {
+		t.Errorf("Expected empty result with validation error, got: %+v", result)
 	}
 }
