@@ -2,6 +2,7 @@ package weather
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -51,6 +52,7 @@ type RawCurrentState struct {
 	Time          string  `json:"time"`
 	Temperature2M float64 `json:"temperature_2m"`
 	Precipitation float64 `json:"precipitation"`
+	Validate      func() bool
 }
 
 // holds raw daily conditions“
@@ -59,4 +61,16 @@ type RawDailyData struct {
 	Temperature2MMax []float64 `json:"temperature_2m_max"`
 	Temperature2MMin []float64 `json:"temperature_2m_min"`
 	PrecipitationSum []float64 `json:"precipitation_sum"`
+}
+
+func (r RawDailyData) Validate() error {
+	expectedLen := len(r.Time)
+
+	if len(r.Temperature2MMax) != expectedLen ||
+		len(r.Temperature2MMin) != expectedLen ||
+		len(r.PrecipitationSum) != expectedLen {
+		return fmt.Errorf("inconsistent array lengths in daily data: time=%d, max=%d, min=%d, rain=%d",
+			expectedLen, len(r.Temperature2MMax), len(r.Temperature2MMin), len(r.PrecipitationSum))
+	}
+	return nil
 }

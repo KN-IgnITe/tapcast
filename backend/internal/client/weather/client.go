@@ -11,15 +11,15 @@ import (
 )
 
 // implements WeatherClient interface
-type Client struct {
+type OpenMeteoWeatherClient struct {
 	ForecastURL string
 	ArchiveURL  string
 	HTTPClient  *http.Client
 }
 
 // creates a new instance of Client
-func NewClient() *Client {
-	return &Client{
+func NewClient() *OpenMeteoWeatherClient {
+	return &OpenMeteoWeatherClient{
 		ForecastURL: OpenMeteoForecastURL,
 		ArchiveURL:  OpenMeteoArchiveURL,
 		HTTPClient: &http.Client{
@@ -29,7 +29,7 @@ func NewClient() *Client {
 }
 
 // retrieves current weather conditions
-func (c *Client) FetchCurrentWeather(ctx context.Context, lat, lon float64) (*CurrentWeatherSummary, error) {
+func (c *OpenMeteoWeatherClient) FetchCurrentWeather(ctx context.Context, lat, lon float64) (*CurrentWeatherSummary, error) {
 	reqURL, err := url.Parse(c.ForecastURL)
 	if err != nil {
 		return nil, fmt.Errorf("parsing forecast url: %w", err)
@@ -54,7 +54,7 @@ func (c *Client) FetchCurrentWeather(ctx context.Context, lat, lon float64) (*Cu
 }
 
 // retrieves weather forecast for a given number of days
-func (c *Client) FetchFutureWeather(ctx context.Context, lat, lon float64, days int) ([]WeatherSummary, error) {
+func (c *OpenMeteoWeatherClient) FetchFutureWeather(ctx context.Context, lat, lon float64, days int) ([]WeatherSummary, error) {
 	reqURL, err := url.Parse(c.ForecastURL)
 	if err != nil {
 		return nil, fmt.Errorf("parsing forecast url: %w", err)
@@ -73,11 +73,16 @@ func (c *Client) FetchFutureWeather(ctx context.Context, lat, lon float64, days 
 		return nil, err
 	}
 
-	return summarizeWeather(resp.Daily), nil
+	summaries, err := summarizeWeather(resp.Daily)
+	if err != nil {
+		return nil, fmt.Errorf("processing future weather data: %w", err)
+	}
+
+	return summaries, nil
 }
 
 // retrieves past weather data within a specific date range
-func (c *Client) FetchHistoricalWeather(ctx context.Context, lat, lon float64, startDate, endDate time.Time) ([]WeatherSummary, error) {
+func (c *OpenMeteoWeatherClient) FetchHistoricalWeather(ctx context.Context, lat, lon float64, startDate, endDate time.Time) ([]WeatherSummary, error) {
 	reqURL, err := url.Parse(c.ArchiveURL)
 	if err != nil {
 		return nil, fmt.Errorf("parsing archive url: %w", err)
@@ -98,11 +103,16 @@ func (c *Client) FetchHistoricalWeather(ctx context.Context, lat, lon float64, s
 		return nil, err
 	}
 
-	return summarizeWeather(resp.Daily), nil
+	summaries, err := summarizeWeather(resp.Daily)
+	if err != nil {
+		return nil, fmt.Errorf("processing historical weather data: %w", err)
+	}
+
+	return summaries, nil
 }
 
-// is a helper method to handle HTTP execution and JSON decoding
-func (c *Client) doRequest(ctx context.Context, targetURL string, target interface{}) error {
+// helper method to handle HTTP execution and JSON decoding
+func (c *OpenMeteoWeatherClient) doRequest(ctx context.Context, targetURL string, target interface{}) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
@@ -126,7 +136,11 @@ func (c *Client) doRequest(ctx context.Context, targetURL string, target interfa
 }
 
 // transforms raw Open-Meteo daily arrays into business logic slice
-func summarizeWeather(daily RawDailyData) []WeatherSummary {
+func summarizeWeather(daily RawDailyData) ([]WeatherSummary, error) {
+	if err := daily.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid daily data: %w", err)
+	}
+
 	var summaries []WeatherSummary
 	for i := range daily.Time {
 		max := daily.Temperature2MMax[i]
@@ -139,5 +153,5 @@ func summarizeWeather(daily RawDailyData) []WeatherSummary {
 			Rain:          daily.PrecipitationSum[i],
 		})
 	}
-	return summaries
+	return summaries, nil
 }
