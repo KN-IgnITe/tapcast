@@ -1,70 +1,100 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import { useState, useEffect } from "react";
 import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0);
-  const [backendResponse, setBackendResponse] =
-    useState<string>("No response yet");
-  const [loading, setLoading] = useState(false);
+type Joke = {
+    setup: string;
+    punchline: string;
+};
 
-  const callBackend = async () => {
-    try {
-      setLoading(true);
-      const apiUrl = import.meta.env.VITE_API_URL;
-      const response = await fetch(`${apiUrl}/ping`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      setBackendResponse(JSON.stringify(data, null, 2));
-    } catch (error) {
-      setBackendResponse(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+export function Joke({ joke }: { joke: Joke | null }) {
+    if (!joke)
+        return (
+            <p className="text-gray-500 animate-pulse">Ładowanie żartu...</p>
+        );
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <button onClick={callBackend} disabled={loading}>
-          {loading ? "Calling backend..." : "Call Backend"}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-        <div
-          style={{ marginTop: "20px", padding: "10px", borderRadius: "4px" }}
-        >
-          <h3>Backend Response:</h3>
-          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-            {backendResponse}
-          </pre>
+    return (
+        <div className="mt-6 p-4 bg-white rounded-xl shadow-md border border-gray-100">
+            <p className="font-medium text-gray-800 italic">"{joke.setup}"</p>
+            <p className="mt-2 font-bold text-indigo-600">{joke.punchline}</p>
         </div>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  );
+    );
+}
+
+function App() {
+    const [count, setCount] = useState<number>(0);
+    const [joke, setJoke] = useState<Joke | null>(null);
+
+    const getJoke = async () => {
+        try {
+            const response = await fetch(
+                "https://official-joke-api.appspot.com/random_joke",
+            );
+            const data = await response.json();
+            setJoke(data);
+        } catch (error) {
+            console.error("failed to fetch joke: ", error);
+        }
+    };
+
+    useEffect(() => {
+        // i love react
+        const getInitialJoke = async () => {
+            try {
+                const response = await fetch(
+                    "https://official-joke-api.appspot.com/random_joke",
+                );
+                const data = await response.json();
+                setJoke(data);
+            } catch (error) {
+                console.error("failed to fetch initial joke:", error);
+            }
+        };
+
+        getInitialJoke();
+    }, []);
+
+    return (
+        // zamiast style={{ textAlign: "center" ... }}
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans">
+            <div className="w-full max-w-md flex flex-col gap-6 text-center">
+                <span className="text-xl font-semibold text-slate-700">
+                    Jaka mamy dziś pogodę?
+                </span>
+
+                <div className="flex justify-center gap-4">
+                    <button
+                        className="px-6 py-2 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors shadow-lg"
+                        onClick={() => setCount(2317)}
+                    >
+                        spoko
+                    </button>
+                    <button
+                        className="px-6 py-2 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors shadow-lg"
+                        onClick={() => setCount(5)}
+                    >
+                        meh
+                    </button>
+                </div>
+
+                <span className="text-lg text-slate-600">
+                    Twoja lodziarnia potrzebuje dziś{" "}
+                    <strong className="text-indigo-600 text-2xl px-2">
+                        {count}
+                    </strong>{" "}
+                    lodzików
+                </span>
+
+                <button
+                    className="mt-4 px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:scale-105 transition-transform active:bg-indigo-700 shadow-xl"
+                    onClick={getJoke}
+                >
+                    Nowy żart!
+                </button>
+
+                <Joke joke={joke} />
+            </div>
+        </div>
+    );
 }
 
 export default App;

@@ -1,4 +1,4 @@
-include .env
+-include .env
 export
 
 .PHONY: init-hooks init-env up down build logs proto deps-frontend deps-backend deps-inference deps-training dev-frontend dev-backend dev-inference dev-training backend-local inference-local training-local frontend-local clean docs
@@ -19,7 +19,8 @@ init-hooks:
 	lefthook install
 
 init-env:
-	@if [ ! -f .env ]; then cp .env.example .env; echo "Error: .env file missing. Created template. Populate variables and rerun."; exit 1; fi
+# copies template and allows the program to continue
+	@if [ ! -f .env ]; then cp .env.example .env; echo "Successfully created .env file from template. Please populate the variables!"; fi
 
 up: init-env
 	docker compose up -d

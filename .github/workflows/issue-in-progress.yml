@@ -1,0 +1,54 @@
+name: Move Issue to In Progress
+
+on:
+  create # Trigger: runs when new things are created in the repo
+
+jobs:
+  move-to-in-progress:
+    # Condition: ensure that a branch was created, not a tag
+    if: github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract Issue ID from branch name
+        id: get_issue
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branchName = context.payload.ref;
+            console.log(`New branch: ${branchName}`);
+            
+            // Find number in branch name (e.g. "44-something" -> 44)
+            const match = branchName.match(/\b(\d+)\b/);
+            if (!match) {
+              console.log("No issue number found in branch name. Skipping.");
+              return;
+            }
+            
+            const issueNum = parseInt(match[1], 10);
+            
+            try {
+              // Get technical issue ID from GitHub
+              const { data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNum
+              });
+              
+              core.setOutput('node_id', issue.node_id);
+              console.log(`Found Issue #${issueNum}. Moving to project...`);
+            } catch (error) {
+              console.log(`Issue #${issueNum} does not exist.`);
+            }
+
+      - name: Update Project Status
+        # Run only if the previous step found a valid issue
+        if: steps.get_issue.outputs.node_id != ''
+        uses: leonsteinhaeuser/project-beta-automations@v2.2.1
+        with:
+          gh_token: ${{ secrets.PAT_TOKEN }}
+          organization: KN-IGNITe
+          project_id: 4
+          resource_node_id: ${{ steps.get_issue.outputs.node_id }}
+          status_value: 'In Progress'

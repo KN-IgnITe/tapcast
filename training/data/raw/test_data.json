@@ -1,0 +1,300 @@
+{
+    "day_data": [
+        {
+            "date": "2024-03-01",
+            "day_of_week": 5,
+            "is_working": true,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 12.5,
+                "temp_amplitude": 5.0,
+                "rain": 0.0
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 50,
+                    "yesterday_demand": 45,
+                    "week_ago_demand": 48
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 120,
+                    "yesterday_demand": 110,
+                    "week_ago_demand": 115
+                }
+            ]
+        },
+        {
+            "date": "2024-03-01",
+            "day_of_week": 5,
+            "is_working": true,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 12.5,
+                "temp_amplitude": 5.0,
+                "rain": 0.0
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 50,
+                    "yesterday_demand": 45,
+                    "week_ago_demand": 48
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 120,
+                    "yesterday_demand": 110,
+                    "week_ago_demand": 115
+                }
+            ]
+        },
+        {
+            "date": "2024-03-01",
+            "day_of_week": 5,
+            "is_working": true,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 12.5,
+                "temp_amplitude": 5.0,
+                "rain": 0.0
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 50,
+                    "yesterday_demand": 45,
+                    "week_ago_demand": 48
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 120,
+                    "yesterday_demand": 110,
+                    "week_ago_demand": 115
+                }
+            ]
+        },
+        {
+            "date": "2024-03-01",
+            "day_of_week": 5,
+            "is_working": true,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 12.5,
+                "temp_amplitude": 5.0,
+                "rain": 0.0
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 50,
+                    "yesterday_demand": 45,
+                    "week_ago_demand": 48
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 120,
+                    "yesterday_demand": 110,
+                    "week_ago_demand": 115
+                }
+            ]
+        },
+        {
+            "date": "2024-03-01",
+            "day_of_week": 5,
+            "is_working": true,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 12.5,
+                "temp_amplitude": 5.0,
+                "rain": 0.0
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 50,
+                    "yesterday_demand": 45,
+                    "week_ago_demand": 48
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 120,
+                    "yesterday_demand": 110,
+                    "week_ago_demand": 115
+                }
+            ]
+        },
+        {
+            "date": "2024-03-01",
+            "day_of_week": 5,
+            "is_working": true,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 12.5,
+                "temp_amplitude": 5.0,
+                "rain": 0.0
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 50,
+                    "yesterday_demand": 45,
+                    "week_ago_demand": 48
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 120,
+                    "yesterday_demand": 110,
+                    "week_ago_demand": 115
+                }
+            ]
+        },
+        {
+            "date": "2024-03-01",
+            "day_of_week": 5,
+            "is_working": true,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 12.5,
+                "temp_amplitude": 5.0,
+                "rain": 0.0
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 50,
+                    "yesterday_demand": 45,
+                    "week_ago_demand": 48
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 120,
+                    "yesterday_demand": 110,
+                    "week_ago_demand": 115
+                }
+            ]
+        },
+        {
+            "date": "2024-03-01",
+            "day_of_week": 5,
+            "is_working": true,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 12.5,
+                "temp_amplitude": 5.0,
+                "rain": 0.0
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 50,
+                    "yesterday_demand": 45,
+                    "week_ago_demand": 48
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 120,
+                    "yesterday_demand": 110,
+                    "week_ago_demand": 115
+                }
+            ]
+        },
+        {
+            "date": "2024-03-01",
+            "day_of_week": 5,
+            "is_working": true,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 12.5,
+                "temp_amplitude": 5.0,
+                "rain": 0.0
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 50,
+                    "yesterday_demand": 45,
+                    "week_ago_demand": 48
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 120,
+                    "yesterday_demand": 110,
+                    "week_ago_demand": 115
+                }
+            ]
+        },
+        {
+            "date": "2024-03-01",
+            "day_of_week": 5,
+            "is_working": true,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 12.5,
+                "temp_amplitude": 5.0,
+                "rain": 0.0
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 50,
+                    "yesterday_demand": 45,
+                    "week_ago_demand": 48
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 120,
+                    "yesterday_demand": 110,
+                    "week_ago_demand": 115
+                }
+            ]
+        },
+        {
+            "date": "2024-03-02",
+            "is_working": false,
+            "is_next_day_working": false,
+            "weather": {
+                "avg_temp": 8.0,
+                "temp_amplitude": -2.5,
+                "rain": 10.2
+            },
+            "sells": [
+                {
+                    "PLU": 1,
+                    "category": 10,
+                    "demand": 30,
+                    "yesterday_demand": 50,
+                    "week_ago_demand": 28
+                },
+                {
+                    "PLU": 9,
+                    "category": 2,
+                    "demand": 80,
+                    "yesterday_demand": 120,
+                    "week_ago_demand": 85
+                }
+            ]
+        }
+    ]
+}
