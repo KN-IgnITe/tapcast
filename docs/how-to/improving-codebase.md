@@ -15,7 +15,7 @@ If you decide that the issue demands architectural decisions to be made, you can
 
 Once you understand the issue, create a branch for it. The issue page has a "Create Branch" button that will create a branch.
 
-Make sure to follow the [Git Naming Conventions](git-naming-conventions.md#2-branches) when naming your branch.
+Make sure to follow the [Git Naming Conventions](../reference/git-naming-conventions.md#2-branches) when naming your branch.
 
 > At this stage the issue should be moved to the "In Progress" column in the project board.
 
@@ -23,7 +23,7 @@ Make sure to follow the [Git Naming Conventions](git-naming-conventions.md#2-bra
 
 Make the necessary code changes to resolve the issue. Make sure to write tests for your changes if applicable.
 
-You are expected to follow the [Git Naming Conventions](git-naming-conventions.md#4-commits) when naming your commits.
+You are expected to follow the [Git Naming Conventions](../reference/git-naming-conventions.md#4-commits) when naming your commits.
 
 >At this stage the issue should be moved to the "In Progress" column in the project board.
 
@@ -31,7 +31,7 @@ You are expected to follow the [Git Naming Conventions](git-naming-conventions.m
 
 Once you have made the necessary changes, create a Pull Request (PR) to merge your branch into the `development` branch.
 
-Make sure to follow the [Git Naming Conventions](git-naming-conventions.md#3-pull-requests) when naming your PR.
+Make sure to follow the [Git Naming Conventions](../reference/git-naming-conventions.md#3-pull-requests) when naming your PR.
 
 Link the PR to the issue in the issue page by using the "development" section.
 On correct assignment it should say `<yourname> linked a pull request that will close this issue`

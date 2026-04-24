@@ -2,7 +2,7 @@
 
 This document outlines the standard naming conventions for Issues, Branches, Pull Requests and commits in the project. These rules have been established to enhance traceability, reduce redundancy, and improve our overall developer experience and automated tooling.
 
-For the rationale behind these rules, see the [ADR: Branch, Pull Request, and Issue Naming Conventions](../adr/20260421-git-naming).
+For the rationale behind these rules, see the [ADR: Branch, Pull Request, and Issue Naming Conventions](../adr/20260421-git-naming.md).
 
 ---
 
