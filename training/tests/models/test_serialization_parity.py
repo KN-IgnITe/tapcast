@@ -7,8 +7,7 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import Ridge
 from xgboost import XGBRegressor
 
-from training.models.exporter import ModelExporter
-from training.models.importer import ModelImporter
+from training.models.local_io import LocalJoblibExporter, LocalJoblibImporter
 
 
 @pytest.mark.parametrize("model_class", [Ridge, XGBRegressor])
@@ -27,10 +26,10 @@ def test_model_serialization_parity(tmp_path: Path, model_class: Type[Any]) -> N
     predictions_before = original_model.predict(X_test)
 
     model_path = tmp_path / f"test_{model_class.__name__}_parity.joblib"
-    exporter = ModelExporter()
+    exporter = LocalJoblibExporter()
     exporter.save(original_model, model_path)
 
-    importer = ModelImporter()
+    importer = LocalJoblibImporter()
     loaded_model = importer.load(model_path)
 
     predictions_after = loaded_model.predict(X_test)
