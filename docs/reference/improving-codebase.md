@@ -33,6 +33,9 @@ Once you have made the necessary changes, create a Pull Request (PR) to merge yo
 
 Make sure to follow the [Git Naming Conventions](git-naming-conventions.md#3-pull-requests) when naming your PR.
 
+Link the PR to the issue in the issue page by using the "development" section.
+On correct assignment it should say `<yourname> linked a pull request that will close this issue`
+
 > At this stage the issue should be moved to the "In Review" column in the project board.
 
 ## 5. **Get the Pull Request reviewed**
