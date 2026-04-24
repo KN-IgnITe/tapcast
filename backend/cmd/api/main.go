@@ -17,6 +17,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	//"github.com/m1kus3q/pubpredictor/backend/pkg/parser"
+	api "github.com/m1kus3q/pubpredictor/backend/internal/handlers"
+
 	pb "github.com/m1kus3q/pubpredictor/backend/pkg/pb/ping/v1"
 )
 
@@ -84,6 +87,8 @@ func main() {
 	}))
 
 	r.Get("/api/ping", app.pingHandler)
+
+	r.Post("/uploadXLSX", api.UploadHandlerXLSX)
 
 	srv := &http.Server{
 		Addr:         ":" + backend_port,
