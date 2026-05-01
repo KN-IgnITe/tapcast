@@ -5,7 +5,7 @@ from typing import Any, Protocol
 class ModelExporter(Protocol):
     """Abstract base class for model exporters."""
 
-    def save(sel, model: Any, destination: Path | str) -> None: ...
+    def save(self, model: Any, destination: Path | str) -> None: ...
 
 
 class ModelImporter(Protocol):
