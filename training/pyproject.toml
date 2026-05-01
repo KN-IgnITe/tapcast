@@ -40,6 +40,7 @@ dev = [
 module = [
     "pandas.*",
     "sklearn.*",
-    "xgboost.*"
+    "xgboost.*",
+    "joblib.*"
 ]
 ignore_missing_imports = true
