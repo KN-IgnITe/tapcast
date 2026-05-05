@@ -3,10 +3,15 @@ name: Move Issue to In Progress
 on:
   create: # Trigger: runs when new things are created in the repo
   workflow_dispatch: # Allow manual triggering of the workflow
+    inputs:
+        ref:
+          description: 'Branch to simulate creation of'
+          required: true
+          default: 'devops/77-action-multiple-issue-branches'
 
 jobs:
   extract-issues:
-    if: github.event.ref_type == 'branch'
+    if: github.event.ref_type == 'branch' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       node_ids: ${{ steps.get_issue.outputs.node_ids }}
@@ -17,7 +22,9 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const branchName = context.payload.ref;
+            const branchName = context.eventName === 'workflow_dispatch'
+              ? context.payload.inputs.ref   // the --field ref=... you pass in
+              : context.payload.ref;         // the real branch name on create event
             console.log(`New branch: ${branchName}`);
             
             // Get the part after the slash, e.g. "69-68-fix-leak" from "backend/69-68-fix-leak"
