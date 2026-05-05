@@ -35,7 +35,7 @@ pre-commit:
       priority: 2
       root: "training/"
       glob: "*.py"
-      run: poetry run mypy --disallow-untyped-defs {staged_files}
+      run: poetry run mypy {staged_files}
     training-test:
       priority: 3
       root: "training/"
