@@ -1,7 +1,8 @@
 name: Move Issue to In Progress
 
 on:
-  create # Trigger: runs when new things are created in the repo
+  create: # Trigger: runs when new things are created in the repo
+  workflow_dispatch: # Allow manual triggering of the workflow
 
 jobs:
   extract-issues:
