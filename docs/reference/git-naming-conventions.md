@@ -59,7 +59,19 @@ For the rationale behind these rules, see the [ADR: Branch, Pull Request, and Is
   ```
 
 * **Details:** We follow the standard [Conventional Commits](https://www.conventionalcommits.org/) specification.
-  * **type**: Defines the intent of the commit. Common types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+  * **type**: Defines the intent of the commit. Common types:
+    * `feat` - introduces a new feature or capability
+    * `fix` - corrects a bug, regression, or compliance issue in existing functionality
+    * `docs` - updates documentation only; no changes to code or tests
+    * `style` - applies formatting, whitespace, or linting changes that do not affect runtime behavior (e.g. prettier, eslint --fix)
+    * `refactor` - restructures existing code without changing external behavior or fixing a bug; not a feature, not a fix
+    * `perf` - improves performance (e.g. caching, query optimization, algorithmic improvements) without changing behavior
+    * `test` - adds missing tests or corrects existing ones; no production code changes
+    * `build` - modifies the build system, tooling, or external dependencies (e.g. webpack, npm, Makefile)
+    * `ci` - updates CI/CD pipeline configuration or scripts (e.g. GitHub Actions, CircleCI)
+    * `chore` - routine maintenance that doesn't fit another type (e.g. updating .gitignore, rotating secrets, bumping versions)
+    * `revert` - reverts a previous commit; the body should reference the SHA being reverted
+
   * **scope**: (Optional but recommended) Defines what section of the codebase the commit affects.
   * **subject**: A short, imperative tense description of the change. Do not capitalize the first letter, and no dot (`.`) at the end.
 
