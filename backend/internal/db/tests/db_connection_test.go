@@ -50,7 +50,7 @@ func TestConnectFunction(t *testing.T) {
 	name := os.Getenv("DB_NAME")
 	port := os.Getenv("DB_PORT")
 
-	if host == "" || user == "" || name == "" {
+	if host == "" || user == "" || name == "" || pass == "" || port == "" {
 		t.Fatal("Required environment variables are not set for integration test")
 	}
 
