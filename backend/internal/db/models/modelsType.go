@@ -17,15 +17,19 @@ func (Day) TableName() string { return "day" }
 type Location struct {
 	LocationID int    `gorm:"primaryKey"`
 	Name       string `gorm:"type:text;not null"`
+
+	Weather []Weather `gorm:"foreignKey:LocationID;references:LocationID"`
+	Bar     []Bar     `gorm:"foreignKey:LocationID;references:LocationID"`
 }
 
 func (Location) TableName() string { return "location" }
 
 type Bar struct {
-	BarID      int      `gorm:"primaryKey"`
-	LocationID int      `gorm:"not null"`
-	Name       string   `gorm:"type:text"`
-	Location   Location `gorm:"foreignKey:LocationID;references:LocationID"`
+	BarID      int    `gorm:"primaryKey"`
+	LocationID int    `gorm:"not null"`
+	Name       string `gorm:"type:text"`
+
+	Article []Article `gorm:"foreignKey:BarID;references:BarID"`
 }
 
 func (Bar) TableName() string { return "bar" }
@@ -36,8 +40,9 @@ type Weather struct {
 	AvgTemp       float64   `gorm:"not null"`
 	TempAmplitude float64   `gorm:"not null"`
 	Rain          float64   `gorm:"not null;default:0;check:rain>=0"`
-	Day           Day       `gorm:"foreignKey:WeatherDate;references:DayDate"`
-	Location      Location  `gorm:"foreignKey:LocationID;references:LocationID"`
+
+	//Day Day `gorm:"foreignKey:WeatherDate;references:DayDate"`
+	//Location Location `gorm:"foreignKey:LocationID;references:LocationID"`
 }
 
 func (Weather) TableName() string { return "weather" }
@@ -46,7 +51,10 @@ type Article struct {
 	BarID    int `gorm:"primaryKey"`
 	Plu      int `gorm:"primaryKey"`
 	Category int `gorm:"not null"`
-	Bar      Bar `gorm:"foreignKey:BarID;references:BarID"`
+
+	//Bar      Bar `gorm:"foreignKey:BarID;references:BarID"`
+
+	Sales []Sale `gorm:"foreignKey:BarID,Plu;references:BarID,Plu"`
 }
 
 func (Article) TableName() string { return "article" }
@@ -57,7 +65,6 @@ type Sale struct {
 	Plu      int       `gorm:"primaryKey"`
 	Amount   int       `gorm:"not null;check:amount>=0"`
 	Day      Day       `gorm:"foreignKey:SaleDate;references:DayDate"`
-	Article  Article   `gorm:"foreignKey:BarID,Plu;references:BarID,Plu"`
 }
 
 func (Sale) TableName() string { return "sale" }
