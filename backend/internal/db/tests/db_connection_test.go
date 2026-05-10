@@ -1,42 +1,42 @@
 //go:build integration
 
-package tests
+package test
 
 import (
-	"fmt"
-	"os"
 	"testing"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/m1kus3q/pubpredictor/backend/internal/db"
 )
 
 func TestDatabaseConnection(t *testing.T) {
-	requiredEnvVars := []string{"DB_HOST", "POSTGRES_USER", "POSTGRES_PASSWORD", "DB_NAME", "DB_PORT"}
-	for _, envVar := range requiredEnvVars {
-		if os.Getenv(envVar) == "" {
-			t.Fatalf("required environment variable %s is not set", envVar)
-		}
+	config, err := db.NewDBConfig()
+
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-		os.Getenv("DB_HOST"), os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("DB_NAME"), os.Getenv("DB_PORT"),
-	)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-
+	db_client, err := db.NewDBClient(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	myDB := db_client.GetDB()
+	/*
+		dsn := fmt.Sprintf(
+			"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+			config.Host, config.User, config.Password, config.DBName, config.Port,
+		)
+		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	*/
 	if err != nil {
 		t.Fatalf("failed to connect to database: %v", err)
 	}
 
-	sqlDb, err := db.DB()
+	sqlDb, err := myDB.DB()
 	if err != nil {
 		t.Fatalf("failed to get sql.DB, %v", err)
 	}
-
 	err = sqlDb.Ping()
 	if err != nil {
 		t.Fatalf("database ping failed: %v", err)
 	}
-
 }
