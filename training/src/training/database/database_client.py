@@ -1,3 +1,6 @@
+# allow forward references in types without quotes, __enter__ returns DatabaseClient
+from __future__ import annotations
+
 import psycopg
 from psycopg.rows import dict_row
 from types import TracebackType
