@@ -8,6 +8,11 @@ import (
 )
 
 func Connect(db_host string, postgres_user string, postgres_password string, db_name string, db_port string) (*gorm.DB, error) {
+
+	if db_host == "" || postgres_user == "" || postgres_password == "" || db_name == "" || db_port == "" {
+		return nil, fmt.Errorf("some of the variables are empty")
+	}
+
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		db_host,
