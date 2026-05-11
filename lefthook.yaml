@@ -48,18 +48,16 @@ pre-commit:
             root: "inference/"
             glob: "*.py"
             run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files}"
+          
           - name: training-flake8
             root: "training/"
             glob: "*.py"
             run: docker run --rm -v "$PWD:/workdir" -w /workdir alpine/flake8:7.0.0 {staged_files}
-          - name: training-mypy
+          - name: training-mypy-pytest
             root: "training/"
             glob: "*.py"
-            run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files}"
-          - name: backend-golangci-lint
-            root: "backend/"
-            glob: "*.go"
-            run: docker run --rm -v "$PWD:/app" -w /app golangci/golangci-lint:v2.12.2 bash -c "go mod download && golangci-lint run ./..."
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files} && poetry run pytest -v"
+          
           - name: frontend-eslint
             root: "frontend/"
             glob: "*.{ts,tsx,js,jsx}"
@@ -68,11 +66,11 @@ pre-commit:
             root: "frontend/"
             glob: "*.{ts,tsx}"
             run: docker run --rm -v "$PWD:/workdir" -v frontend-node-modules:/workdir/node_modules -w /workdir node:22-alpine sh -c "test -d node_modules/typescript || npm install --no-audit --no-fund > /dev/null 2>&1; npx tsc --noEmit"
-        # TESTS
-          - name: training-test
-            root: "training/"
-            glob: "*.py"
-            run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run pytest -v"
+          
+          - name: backend-golangci-lint
+            root: "backend/"
+            glob: "*.go"
+            run: docker run --rm -v "$PWD:/app" -w /app golangci/golangci-lint:v2.12.2 bash -c "go mod download && golangci-lint run ./..."
           - name: backend-test
             root: "backend/"
             glob: "*.go"
