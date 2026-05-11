@@ -1,89 +1,79 @@
 pre-commit:
-  parallel: true
-  commands:
-    # Python: Inference
-    inference-black:
-      priority: 1
-      root: "inference/"
-      glob: "*.py"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir pyfound/black:24.4.2 black {staged_files}
-      stage_fixed: true
-    inference-flake8:
-      priority: 2
-      root: "inference/"
-      glob: "*.py"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir alpine/flake8:7.0.0 {staged_files}
-    inference-mypy:
-      priority: 2
-      root: "inference/"
-      glob: "*.py"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files}"
+  piped: true
+  jobs:
+    # --- GROUP 1: FORMATTERS ---
+    - name: formatters
+      group:
+        parallel: true
+        jobs:
+          - name: inference-black
+            root: "inference/"
+            glob: "*.py"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir pyfound/black:24.4.2 black {staged_files}
+            stage_fixed: true
+          - name: training-black
+            root: "training/"
+            glob: "*.py"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir pyfound/black:24.4.2 black {staged_files}
+            stage_fixed: true
+          - name: backend-goimports
+            root: "backend/"
+            glob: "*.go"
+            run: docker run --rm --entrypoint goimports -v "$PWD:/app" -w /app cytopia/goimports:latest -w {staged_files}
+            stage_fixed: true
+          - name: frontend-prettier
+            root: "frontend/"
+            glob: "*.{ts,tsx,js,jsx,css,html}"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir tmknom/prettier:3.2.5 --write {staged_files}
+            stage_fixed: true
+          - name: docs-mkdocs
+            root: "docs/"
+            glob: "*.{md,markdown}"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:v0.13.0 --fix {staged_files}
+            exclude:
+              - "docs/adr/_template.md"
+            stage_fixed: true
 
-    # Python: Training
-    training-black:
-      priority: 1
-      root: "training/"
-      glob: "*.py"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir pyfound/black:24.4.2 black {staged_files}
-      stage_fixed: true
-    training-flake8:
-      priority: 2
-      root: "training/"
-      glob: "*.py"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir alpine/flake8:7.0.0 {staged_files}
-    training-mypy:
-      priority: 2
-      root: "training/"
-      glob: "*.py"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files}"
-    training-test:
-      priority: 3
-      root: "training/"
-      glob: "*.py"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run pytest -v"
-
-    # Go: Backend
-    backend-goimports:
-      priority: 1
-      root: "backend/"
-      glob: "*.go"
-      run: docker run --rm --entrypoint goimports -v "$PWD:/app" -w /app cytopia/goimports:latest -w {staged_files}
-      stage_fixed: true
-    backend-golangci-lint:
-      priority: 2
-      root: "backend/"
-      glob: "*.go"
-      run: docker run --rm -v "$PWD:/app" -w /app golangci/golangci-lint:v2.12.2 bash -c "go mod download && golangci-lint run ./..."
-    backend-test:
-      priority: 3
-      root: "backend/"
-      glob: "*.go"
-      run: docker run --rm -v "$PWD:/app" -w /app golang:1.26 bash -c "go mod download && go test -v ./..."
-
-    # TypeScript/React: Frontend
-    frontend-prettier:
-      priority: 1
-      root: "frontend/"
-      glob: "*.{ts,tsx,js,jsx,css,html}"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir tmknom/prettier:3.2.5 --write {staged_files}
-      stage_fixed: true
-    frontend-eslint:
-      priority: 2
-      root: "frontend/"
-      glob: "*.{ts,tsx,js,jsx}"
-      run: docker run --rm -v "$PWD:/workdir" -v frontend-node-modules:/workdir/node_modules -w /workdir node:22-alpine sh -c "test -d node_modules/eslint || npm install --no-audit --no-fund > /dev/null 2>&1; npx eslint {staged_files}"
-    frontend-tsc:
-      priority: 2
-      root: "frontend/"
-      glob: "*.{ts,tsx}"
-      run: docker run --rm -v "$PWD:/workdir" -v frontend-node-modules:/workdir/node_modules -w /workdir node:22-alpine sh -c "test -d node_modules/typescript || npm install --no-audit --no-fund > /dev/null 2>&1; npx tsc --noEmit"
-
-    # MkDocs: Documentation
-    docs-mkdocs:
-      priority: 1
-      root: "docs/"
-      glob: "*.{md,markdown}"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir davidanson/markdownlint-cli2:v0.13.0 --fix {staged_files}
-      exclude:
-        - "docs/adr/_template.md"
-      stage_fixed: true
+    # --- GROUP 2: LINTERS & TESTS ---
+    - name: verification
+      group:
+        parallel: true
+        jobs:
+        # LINTERS
+          - name: inference-flake8
+            root: "inference/"
+            glob: "*.py"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir alpine/flake8:7.0.0 {staged_files}
+          - name: inference-mypy
+            root: "inference/"
+            glob: "*.py"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files}"
+          - name: training-flake8
+            root: "training/"
+            glob: "*.py"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir alpine/flake8:7.0.0 {staged_files}
+          - name: training-mypy
+            root: "training/"
+            glob: "*.py"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files}"
+          - name: backend-golangci-lint
+            root: "backend/"
+            glob: "*.go"
+            run: docker run --rm -v "$PWD:/app" -w /app golangci/golangci-lint:v2.12.2 bash -c "go mod download && golangci-lint run ./..."
+          - name: frontend-eslint
+            root: "frontend/"
+            glob: "*.{ts,tsx,js,jsx}"
+            run: docker run --rm -v "$PWD:/workdir" -v frontend-node-modules:/workdir/node_modules -w /workdir node:22-alpine sh -c "test -d node_modules/eslint || npm install --no-audit --no-fund > /dev/null 2>&1; npx eslint {staged_files}"
+          - name: frontend-tsc
+            root: "frontend/"
+            glob: "*.{ts,tsx}"
+            run: docker run --rm -v "$PWD:/workdir" -v frontend-node-modules:/workdir/node_modules -w /workdir node:22-alpine sh -c "test -d node_modules/typescript || npm install --no-audit --no-fund > /dev/null 2>&1; npx tsc --noEmit"
+        # TESTS
+          - name: training-test
+            root: "training/"
+            glob: "*.py"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run pytest -v"
+          - name: backend-test
+            root: "backend/"
+            glob: "*.go"
+            run: docker run --rm -v "$PWD:/app" -w /app golang:1.26 bash -c "go mod download && go test -v ./..."
