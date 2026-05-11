@@ -49,7 +49,7 @@ func TestProcessDailyData(t *testing.T) {
 func setupMockServer(responseBody string, statusCode int) *httptest.Server {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(statusCode)
-		fmt.Fprint(w, responseBody)
+		_, _ = fmt.Fprint(w, responseBody)
 	})
 	return httptest.NewServer(handler)
 }
@@ -215,7 +215,7 @@ func TestFetchFutureWeather_ExpectedRequest(t *testing.T) {
 		// return anything with a valid structure so the client doesn't crash during parsing
 		dummyJSON := `{"daily": {"time": ["2023-10-28"], "temperature_2m_max": [22], "temperature_2m_min": [12], "precipitation_sum": [0]}}`
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, dummyJSON)
+		_, _ = fmt.Fprint(w, dummyJSON)
 	}))
 	defer server.Close()
 
