@@ -1,5 +1,5 @@
 pre-commit:
-  piped: true
+  parallel: true
   commands:
     # Python: Inference
     inference-black:
@@ -17,7 +17,7 @@ pre-commit:
       priority: 2
       root: "inference/"
       glob: "*.py"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q mypy && mypy --ignore-missing-imports --disable-error-code no-untyped-def {staged_files}"
+      run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files}"
 
     # Python: Training
     training-black:
@@ -35,12 +35,12 @@ pre-commit:
       priority: 2
       root: "training/"
       glob: "*.py"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q mypy && mypy --ignore-missing-imports {staged_files}"
+      run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files}"
     training-test:
       priority: 3
       root: "training/"
       glob: "*.py"
-      run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install --no-interaction --no-ansi --no-root -q && poetry run pytest -v"
+      run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run pytest -v"
 
     # Go: Backend
     backend-goimports:
@@ -53,7 +53,7 @@ pre-commit:
       priority: 2
       root: "backend/"
       glob: "*.go"
-      run: docker run --rm -v "$PWD:/app" -w /app golangci/golangci-lint:v2.12.2 bash -c "go mod download && golangci-lint run --disable errcheck ./..."
+      run: docker run --rm -v "$PWD:/app" -w /app golangci/golangci-lint:v2.12.2 bash -c "go mod download && golangci-lint run ./..."
     backend-test:
       priority: 3
       root: "backend/"
