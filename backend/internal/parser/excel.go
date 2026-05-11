@@ -40,7 +40,7 @@ func (p *Parser) Parse(r io.Reader) (Raport, error) {
 	if err != nil {
 		return raport, fmt.Errorf("błąd otwierania pliku excel: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	sheetName := f.GetSheetName(f.GetActiveSheetIndex())
 	rows, err := f.GetRows(sheetName)

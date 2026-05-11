@@ -122,7 +122,7 @@ func (c *OpenMeteoWeatherClient) doRequest(ctx context.Context, targetURL string
 	if err != nil {
 		return fmt.Errorf("executing request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected http status: %d", resp.StatusCode)

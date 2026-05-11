@@ -27,7 +27,7 @@ func UploadHandlerXLSX(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Błąd pobierania pliku", http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	//tu juz mamy nasz plik file
 

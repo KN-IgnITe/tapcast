@@ -14,7 +14,7 @@ func TestParseExcelToStruct(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Nie udało się otworzyć pliku testowego '%s': %v", filePath, err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	p := parser.NewParser()
 	raport, err := p.Parse(file)
