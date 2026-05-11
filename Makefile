@@ -36,9 +36,6 @@ logs:
 
 proto:
 	cd proto && buf generate
-	mkdir -p ../inference/src/inference/pb/ping/v1
-	touch ../inference/src/inference/pb/ping/__init__.py
-	touch ../inference/src/inference/pb/ping/v1/__init__.py
 
 deps-frontend: init-env
 	docker compose up -d postgres rabbitmq s3 inference backend
