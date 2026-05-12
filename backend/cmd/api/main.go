@@ -65,7 +65,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to gRPC server: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	app := &App{
 		logger:     log.New(os.Stdout, "", log.LstdFlags),
