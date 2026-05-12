@@ -20,13 +20,7 @@ func TestDatabaseConnection(t *testing.T) {
 		t.Fatal(err)
 	}
 	myDB := db_client.GetDB()
-	/*
-		dsn := fmt.Sprintf(
-			"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-			config.Host, config.User, config.Password, config.DBName, config.Port,
-		)
-		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	*/
+
 	if err != nil {
 		t.Fatalf("failed to connect to database: %v", err)
 	}
