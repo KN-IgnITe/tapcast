@@ -2,41 +2,42 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"runtime"
 
-	"github.com/m1kus3q/pubpredictor/backend/internal/db/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+type Query string
+
 type DBClient struct {
-	db    *gorm.DB
-	query string
+	db      *gorm.DB
+	queries map[string]Query
 }
 
 func (c *DBClient) GetDB() *gorm.DB {
 	return c.db
 }
 
-func loadQuery() (string, error) {
-	_, thisFilePath, _, ok := runtime.Caller(0)
-	if !ok {
-		return "", errors.New("cannot get caller")
-	}
-	dir := filepath.Dir(thisFilePath)
-
-	queryPath := filepath.Join(dir, "..", "..", "..", "infrastructure", "postgres", "query.sql")
-
+func (client *DBClient) LoadQueryFromAbsPath(name string, queryPath string) error {
 	query, err := os.ReadFile(queryPath)
 	if err != nil {
-		return "", err
+		return err
 	}
+	client.queries[name] = Query(query)
+	return nil
+}
 
-	return string(query), nil
+func (client *DBClient) SaveQuery(name string, querySQL string) {
+	client.queries[name] = Query(querySQL)
+}
+
+func NewDBClientFromDB(db *gorm.DB) *DBClient {
+	return &DBClient{
+		db:      db,
+		queries: make(map[string]Query),
+	}
 }
 
 func NewDBClient(config *DBConfig) (*DBClient, error) {
@@ -50,12 +51,7 @@ func NewDBClient(config *DBConfig) (*DBClient, error) {
 		return nil, err
 	}
 
-	data, err := loadQuery()
-	if err != nil {
-		return nil, err
-	}
-
-	return &DBClient{db: db, query: data}, nil
+	return &DBClient{db: db, queries: make(map[string]Query)}, nil
 }
 
 func (client *DBClient) Create(ctx context.Context, value any) error {
@@ -74,13 +70,10 @@ func (client *DBClient) DeleteWhere(ctx context.Context, model any, query string
 	return client.db.WithContext(ctx).Where(query, args...).Delete(model).Error
 }
 
-func (client *DBClient) GetQuery(ctx context.Context, bar_id int) ([]models.Query1Row, error) {
-	var result []models.Query1Row
-
-	err := client.db.WithContext(ctx).Raw(client.query, bar_id).Scan(&result).Error
-	if err != nil {
-		return nil, err
+func (client *DBClient) ExecuteQuery(ctx context.Context, queryName string, dest any, args ...any) error {
+	query, ok := client.queries[queryName]
+	if !ok {
+		return fmt.Errorf("query %s not found", queryName)
 	}
-
-	return result, nil
+	return client.db.WithContext(ctx).Raw(string(query), args...).Scan(dest).Error
 }
