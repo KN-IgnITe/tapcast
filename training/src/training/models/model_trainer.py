@@ -13,9 +13,17 @@ from training.features.preprocessor import DataProcessor
 from training.data.mock_data_generator import ArticleKey, DayKey
 
 
-class ModelType(str, Enum):
-    LOG_LIN = "log_lin"
-    XGBOOST = "xgboost"
+class ModelType(Enum):
+
+    _value_: str
+    requires_scaling: bool
+
+    LOG_LIN = ("log_lin", True)
+    XGBOOST = ("xgboost", False)
+
+    def __init__(self, value: str, requires_scaling: bool) -> None:
+        self._value_ = value
+        self.requires_scaling = requires_scaling
 
 
 class ModelTrainer:
@@ -55,23 +63,22 @@ class ModelTrainer:
         self, train_df: pd.DataFrame, eval_df: pd.DataFrame
     ) -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
         """Preprocess the data and split into X and Y"""
-        preprocessor = DataProcessor()
-
-        X_train_proc = preprocessor.fit_transform(train_df)
-        X_eval_proc = preprocessor.transform(eval_df)
+        preprocessor = DataProcessor(scale_numeric=self.model_type.requires_scaling)
 
         target_col = ArticleKey.DEMAND.value
         date_col = DayKey.DATE.value
-
         drop_cols = [target_col, date_col]
 
-        X_train = X_train_proc.drop(columns=drop_cols).astype(float)
-        y_train = X_train_proc[target_col].astype(float)
+        X_train_raw = train_df.drop(columns=drop_cols)
+        y_train = train_df[target_col].astype(float)
 
-        X_eval = X_eval_proc.drop(columns=drop_cols).astype(float)
-        y_eval = X_eval_proc[target_col].astype(float)
+        X_eval_raw = eval_df.drop(columns=drop_cols)
+        y_eval = eval_df[target_col].astype(float)
 
-        return X_train, y_train, X_eval, y_eval
+        X_train_proc = preprocessor.fit_transform(X_train_raw)
+        X_eval_proc = preprocessor.transform(X_eval_raw)
+
+        return X_train_proc.astype(float), y_train, X_eval_proc.astype(float), y_eval
 
     def _train_and_predict(
         self, X_train: pd.DataFrame, y_train: pd.Series, X_eval: pd.DataFrame

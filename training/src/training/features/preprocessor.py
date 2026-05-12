@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 
 from training.data.mock_data_generator import ArticleKey, DayKey, WeatherKey
 
@@ -12,19 +13,26 @@ class DataProcessor:
     preprocessing(scaling, encoding) the data before it is fed into the model.
     """
 
-    numeric_features: list[str]
+    scale_numeric: bool
+    demand_features: list[str]
+    weather_features: list[str]
     categorical_features: list[str]
-    target_col: str
     preprocessor: ColumnTransformer
     is_fitted: bool
 
-    def __init__(self) -> None:
-        self.numeric_features = [
+    def __init__(self, scale_numeric: bool = False) -> None:
+
+        self.scale_numeric = scale_numeric
+
+        self.demand_features = [
+            ArticleKey.YESTERDAY_DEMAND.value,
+            ArticleKey.WEEK_AGO_DEMAND.value,
+        ]
+
+        self.weather_features = [
             WeatherKey.AVG_TEMP.value,
             WeatherKey.TEMP_AMPLITUDE.value,
             WeatherKey.RAIN.value,
-            ArticleKey.YESTERDAY_DEMAND.value,
-            ArticleKey.WEEK_AGO_DEMAND.value,
         ]
 
         self.categorical_features = [
@@ -33,11 +41,24 @@ class DataProcessor:
             ArticleKey.PLU.value,
         ]
 
-        self.target_col = ArticleKey.DEMAND.value
+        if self.scale_numeric:
+            demand_transformer = Pipeline(
+                steps=[
+                    ("log1p", FunctionTransformer(np.log1p, validate=False)),
+                    ("scaler", StandardScaler()),
+                ]
+            )
+
+            weather_transformer = StandardScaler()
+
+        else:
+            demand_transformer = "passthrough"
+            weather_transformer = "passthrough"
 
         self.preprocessor = ColumnTransformer(
             transformers=[
-                ("num", StandardScaler(), self.numeric_features),
+                ("demand_num", demand_transformer, self.demand_features),
+                ("weather_num", weather_transformer, self.weather_features),
                 (
                     "cat",
                     OneHotEncoder(handle_unknown="ignore", sparse_output=False),
@@ -56,9 +77,7 @@ class DataProcessor:
         train_df = train_df.copy()
         train_df.columns = [getattr(c, "value", str(c)) for c in train_df.columns]
 
-        train_df_logged = self._apply__log_transformer(train_df)
-
-        transformed_array = self.preprocessor.fit_transform(train_df_logged)
+        transformed_array = self.preprocessor.fit_transform(train_df)
         self.is_fitted = True
 
         columns = self._get_feature_names()
@@ -74,9 +93,7 @@ class DataProcessor:
         test_df = test_df.copy()
         test_df.columns = [getattr(c, "value", str(c)) for c in test_df.columns]
 
-        test_df_logged = self._apply__log_transformer(test_df)
-
-        transformed_array = self.preprocessor.transform(test_df_logged)
+        transformed_array = self.preprocessor.transform(test_df)
 
         columns = self._get_feature_names()
 
@@ -84,7 +101,7 @@ class DataProcessor:
 
     def _get_feature_names(self) -> list[str]:
         """Get the feature names after transformation"""
-        numerical_cols = self.numeric_features
+        numerical_cols = self.demand_features + self.weather_features
         cat_transformer = self.preprocessor.named_transformers_["cat"]
 
         categorical_cols = cat_transformer.get_feature_names_out(
@@ -96,17 +113,9 @@ class DataProcessor:
         remainder_cols = [
             col
             for col in all_original_cols
-            if col not in self.categorical_features and col not in self.numeric_features
+            if col not in self.categorical_features
+            and col not in self.demand_features
+            and col not in self.weather_features
         ]
 
         return numerical_cols + categorical_cols + remainder_cols
-
-    def _apply__log_transformer(self, df: pd.DataFrame) -> pd.DataFrame:
-        df = df.copy()
-        yest_key = ArticleKey.YESTERDAY_DEMAND.value
-        week_key = ArticleKey.WEEK_AGO_DEMAND.value
-
-        df[yest_key] = np.log1p(df[yest_key].astype(float))
-        df[week_key] = np.log1p(df[week_key].astype(float))
-
-        return df
