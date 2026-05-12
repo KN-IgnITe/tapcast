@@ -5,17 +5,17 @@ package test
 import (
 	"testing"
 
-	"github.com/m1kus3q/pubpredictor/backend/internal/db"
+	"github.com/m1kus3q/pubpredictor/backend/internal/db/client"
 )
 
-func TestDatabaseConnection(t *testing.T) {
-	config, err := db.NewDBConfig()
+func TestDatabaseConnectionWithClient(t *testing.T) {
+	config, err := client.NewDBConfig()
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	db_client, err := db.NewDBClient(config)
+	db_client, err := client.NewDBClient(config)
 	if err != nil {
 		t.Fatal(err)
 	}
