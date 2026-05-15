@@ -31,6 +31,7 @@ func parseData(path string) (report parser.Raport, err error) {
 	dataParser := parser.NewParser()
 	return dataParser.Parse(file)
 }
+
 func fetchWeather(report parser.Raport) ([]weather.WeatherSummary, error) {
 	if len(report.Days) == 0 {
 		return nil, fmt.Errorf("empty report")
@@ -43,6 +44,8 @@ func fetchWeather(report parser.Raport) ([]weather.WeatherSummary, error) {
 
 	return weatherClient.FetchHistoricalWeather(ctx, weather.DefaultLat, weather.DefaultLon, firstDay, lastDay)
 }
+
+// func addLastDay()
 
 func main() {
 	// read file path as option
@@ -100,6 +103,8 @@ func main() {
 		dbDay := MapDay(dbWeather.WeatherDate)
 		db.FirstOrCreate(&dbDay, models.Day{DayDate: dbDay.DayDate})
 
+		// check if next day is working day for the last date
+
 		db.Save(&dbWeather)
 	}
 
@@ -124,4 +129,9 @@ func main() {
 			db.Save(&dbSale)
 		}
 	}
+
+	// add following day for <is_next_day_working> in querry
+	lastDay := report.Days[len(report.Days)-1].Date
+	dbDay := MapDay(lastDay.AddDate(0, 0, 1))
+	db.Save(&dbDay)
 }
