@@ -56,7 +56,7 @@ dev-backend: deps-backend
 	$(MAKE) backend-local
 
 dev-backend-dataset-builder: deps-backend
-	cd backend && go run ./cmd/dataset_builder/*.go -file=../../data/raport_2025_nowy.xlsx 
+	cd backend && go run ./cmd/dataset_builder/*.go -file=../$(FILE)
 
 dev-inference: deps-inference
 	$(MAKE) inference-local
