@@ -48,11 +48,9 @@ type Weather struct {
 func (Weather) TableName() string { return "weather" }
 
 type Article struct {
-	BarID    int `gorm:"primaryKey"`
-	Plu      int `gorm:"primaryKey"`
-	Category int `gorm:"not null"`
-
-	//Bar      Bar `gorm:"foreignKey:BarID;references:BarID"`
+	BarID    int    `gorm:"primaryKey"`
+	Plu      int    `gorm:"primaryKey"`
+	Category string `gorm:"type:text;not null"`
 
 	Sales []Sale `gorm:"foreignKey:BarID,Plu;references:BarID,Plu"`
 }
@@ -79,9 +77,9 @@ type Query1Row struct {
 	TempAmplitude *float64 `json:"temp_amplitude"`
 	Rain          *float64 `json:"rain"`
 
-	PLU             int  `json:"PLU"`
-	Category        int  `json:"category"`
-	Amount          int  `json:"amount" db:"PLU"`
-	YesterdayDemand *int `json:"yesterday_demand"`
-	WeekAgoDemand   *int `json:"week_ago_demand"`
+	PLU             int    `json:"PLU"`
+	Category        string `json:"category"`
+	Amount          int    `json:"amount" db:"PLU"`
+	YesterdayDemand *int   `json:"yesterday_demand"`
+	WeekAgoDemand   *int   `json:"week_ago_demand"`
 }
