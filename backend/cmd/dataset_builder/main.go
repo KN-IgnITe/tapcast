@@ -96,6 +96,10 @@ func main() {
 			log.Printf("failed to map weather for date %s: %v", ws.Date, err)
 			continue
 		}
+		// create Day if it doesn't exist yet
+		dbDay := MapDay(dbWeather.WeatherDate)
+		db.FirstOrCreate(&dbDay, models.Day{DayDate: dbDay.DayDate})
+
 		db.Save(&dbWeather)
 	}
 
