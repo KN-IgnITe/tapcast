@@ -68,3 +68,9 @@ env.bak/
 backend/pkg/pb/
 inference/src/inference/pb/*
 !inference/src/inference/pb/__init__.py
+
+
+# ==========================================
+# SQL data dumps
+# ==========================================
+data_dump.sql
