@@ -15,17 +15,22 @@ import (
 	"gorm.io/gorm"
 )
 
-func parseData(path string) (parser.Raport, error) {
+func parseData(path string) (report parser.Raport, err error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return parser.Raport{}, err
 	}
-	defer file.Close()
+
+	defer func() {
+		closeErr := file.Close()
+		if err == nil && closeErr != nil {
+			err = closeErr
+		}
+	}()
 
 	dataParser := parser.NewParser()
 	return dataParser.Parse(file)
 }
-
 func fetchWeather(report parser.Raport) ([]weather.WeatherSummary, error) {
 	if len(report.Days) == 0 {
 		return nil, fmt.Errorf("empty report")
@@ -43,8 +48,8 @@ func main() {
 	// read file path as option
 	filePath := flag.String("file", "file.txt", "Ścieżka do pliku z raportem") //usunac wartosc domyslna
 	flag.Parse()
-	report, err := parseData(*filePath)
 
+	report, err := parseData(*filePath)
 	if err != nil {
 		log.Fatalf("failed to parse data: %v", err)
 	}
@@ -67,10 +72,10 @@ func main() {
 	}
 
 	// ensure schema matches models
-	// migration := db.AutoMigrate(&models.Location{}, &models.Bar{}, &models.Day{}, &models.Weather{}, &models.Article{}, &models.Sale{})
-	// if err != nil {
-	// 	log.Fatalf("failed to automigrate: %v", err)
-	// }
+	err = db.AutoMigrate(&models.Location{}, &models.Bar{}, &models.Day{}, &models.Weather{}, &models.Article{}, &models.Sale{})
+	if err != nil {
+		log.Fatalf("failed to auto migrate database: %v", err)
+	}
 
 	// setup mock location and bar
 	mockLocation := models.Location{Name: "Wrocław"}

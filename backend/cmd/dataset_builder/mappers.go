@@ -10,7 +10,6 @@ import (
 )
 
 func MapWeather(ws weather.WeatherSummary, locationID int) (models.Weather, error) {
-	// assumes data format YYYY-MM-DD
 	parsedDate, err := time.Parse(time.DateOnly, ws.Date)
 	if err != nil {
 		return models.Weather{}, err
@@ -42,9 +41,9 @@ func MapArticle(pa parser.Article, barID int) (models.Article, error) {
 	}
 
 	return models.Article{
-		BarID: barID,
-		Plu:   plu,
-		//change category to string
+		BarID:    barID,
+		Plu:      plu,
+		Category: pa.Group,
 	}, nil
 }
 
