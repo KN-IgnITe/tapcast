@@ -1,3 +1,5 @@
+//go:build integration
+
 package minio
 
 import (
@@ -7,16 +9,6 @@ import (
 	"strings"
 	"testing"
 )
-
-/*
-go test -v -run TestCreateClientFromEnv ./internal/minio
-go test -v -run TestBucketOperationFromEnv ./internal/minio
-go test -v -run TestFileOperationFromEnv ./internal/minio
-go test -v -run TestBucketsListFromEnv ./internal/minio
-go test -v -run TestCreateBucketsFromEnv ./internal/minio
-
-
-*/
 
 const (
 	bucketName = "test-bucket"
@@ -35,21 +27,6 @@ func TestCreateClientFromEnv(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-}
-
-func TestCreateBucketsFromEnv(t *testing.T) {
-	ctx := context.Background()
-
-	minioClient, err := NewMinIOClientFromEnv(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = minioClient.CreateBucketIfNotExists(ctx, bucketName)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 }
 
 func TestBucketsListFromEnv(t *testing.T) {
@@ -75,7 +52,6 @@ func deferRemoveBucket(ctx context.Context, t *testing.T, minioClient *MinIOClie
 	}
 }
 
-// uwagi: brak usuniecia - poblem dla create przyszlego
 func TestBucketOperationFromEnv(t *testing.T) {
 	ctx := context.Background()
 

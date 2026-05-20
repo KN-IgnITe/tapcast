@@ -50,34 +50,34 @@ func NewMinIOClientFromConfig(minIOConfig *MinIOConfig, ctx context.Context) (*M
 	}, nil
 }
 
-func (minIOClient *MinIOClient) CreateBucket(ctx context.Context, bucket string) error {
+func (minIOClient *MinIOClient) CreateBucket(ctx context.Context, bucketName string) error {
 	_, err := minIOClient.client.CreateBucket(
 		ctx,
 		&s3.CreateBucketInput{
-			Bucket: ptr.String(bucket),
+			Bucket: ptr.String(bucketName),
 		},
 	)
 
 	return err
 }
 
-func (minIOClient *MinIOClient) CreateBucketIfNotExists(ctx context.Context, bucket string) error {
+func (minIOClient *MinIOClient) CreateBucketIfNotExists(ctx context.Context, bucketName string) error {
 	bucketList, err := minIOClient.ListBuckets(ctx)
 	if err != nil {
 		return err
 	}
-	if slices.Contains(bucketList, bucket) {
+	if slices.Contains(bucketList, bucketName) {
 		return nil
 	}
 
-	return minIOClient.CreateBucket(ctx, bucket)
+	return minIOClient.CreateBucket(ctx, bucketName)
 }
 
-func (minIOClient *MinIOClient) RemoveBucket(ctx context.Context, bucket string) error {
+func (minIOClient *MinIOClient) RemoveBucket(ctx context.Context, bucketName string) error {
 	_, err := minIOClient.client.DeleteBucket(
 		ctx,
 		&s3.DeleteBucketInput{
-			Bucket: ptr.String(bucket),
+			Bucket: ptr.String(bucketName),
 		},
 	)
 	return err
@@ -100,11 +100,11 @@ func (minIOClient *MinIOClient) ListBuckets(ctx context.Context) ([]string, erro
 	return bucketNames, nil
 }
 
-func (minIOClient *MinIOClient) UploadObject(ctx context.Context, bucket string, key string, body io.Reader) error {
+func (minIOClient *MinIOClient) UploadObject(ctx context.Context, bucketName string, key string, body io.Reader) error {
 	_, err := minIOClient.client.PutObject(
 		ctx,
 		&s3.PutObjectInput{
-			Bucket: ptr.String(bucket),
+			Bucket: ptr.String(bucketName),
 			Key:    ptr.String(key),
 			Body:   body,
 		},
@@ -112,11 +112,11 @@ func (minIOClient *MinIOClient) UploadObject(ctx context.Context, bucket string,
 	return err
 }
 
-func (minIOClient *MinIOClient) RemoveObject(ctx context.Context, bucket string, key string) error {
+func (minIOClient *MinIOClient) RemoveObject(ctx context.Context, bucketName string, key string) error {
 	_, err := minIOClient.client.DeleteObject(
 		ctx,
 		&s3.DeleteObjectInput{
-			Bucket: ptr.String(bucket),
+			Bucket: ptr.String(bucketName),
 			Key:    ptr.String(key),
 		},
 	)
@@ -124,11 +124,11 @@ func (minIOClient *MinIOClient) RemoveObject(ctx context.Context, bucket string,
 	return err
 }
 
-func (minIOClient *MinIOClient) GetObject(ctx context.Context, bucket string, key string) (io.ReadCloser, error) {
+func (minIOClient *MinIOClient) GetObject(ctx context.Context, bucketName string, key string) (io.ReadCloser, error) {
 	object, err := minIOClient.client.GetObject(
 		ctx,
 		&s3.GetObjectInput{
-			Bucket: ptr.String(bucket),
+			Bucket: ptr.String(bucketName),
 			Key:    ptr.String(key),
 		},
 	)
@@ -137,22 +137,3 @@ func (minIOClient *MinIOClient) GetObject(ctx context.Context, bucket string, ke
 	}
 	return object.Body, nil
 }
-
-/*
-
-func (m *MinIOClient) ListBuckets(
-	ctx context.Context,
-) ([]types.Bucket, error) {
-
-	output, err := m.client.ListBuckets(
-		ctx,
-		&s3.ListBucketsInput{},
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return output.Buckets, nil
-}
-*/
