@@ -5,9 +5,9 @@ from training.database.database_config import DatabaseConfig
 def test_database_config_uses_env_values(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DB_HOST", "db.internal")
     monkeypatch.setenv("DB_PORT", "6543")
-    monkeypatch.setenv("POSTGRES_DB", "tapcast")
+    monkeypatch.setenv("DB_NAME", "tapcast")
     monkeypatch.setenv("POSTGRES_USER", "tapcast_user")
-    monkeypatch.setenv("DB_PASSWORD", "secret")
+    monkeypatch.setenv("POSTGRES_PASSWORD", "secret")
 
     cfg = DatabaseConfig()
 
@@ -18,13 +18,29 @@ def test_database_config_uses_env_values(monkeypatch: pytest.MonkeyPatch) -> Non
     assert cfg.password == "secret"
 
 
+def test_database_config_falls_back_to_legacy_env_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("DB_NAME", raising=False)
+    monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
+    monkeypatch.setenv("POSTGRES_DB", "legacy_db")
+    monkeypatch.setenv("DB_PASSWORD", "legacy_secret")
+
+    cfg = DatabaseConfig()
+
+    assert cfg.db_name == "legacy_db"
+    assert cfg.password == "legacy_secret"
+
+
 def test_database_config_uses_defaults_when_env_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("DB_HOST", raising=False)
     monkeypatch.delenv("DB_PORT", raising=False)
+    monkeypatch.delenv("DB_NAME", raising=False)
     monkeypatch.delenv("POSTGRES_DB", raising=False)
     monkeypatch.delenv("POSTGRES_USER", raising=False)
+    monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
     monkeypatch.delenv("DB_PASSWORD", raising=False)
 
     cfg = DatabaseConfig()
