@@ -1,22 +1,20 @@
-import os
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from dataclasses import dataclass, field
 
+class DatabaseConfig(BaseSettings):
+    host: str = Field("localhost", validation_alias="DB_HOST")
+    port: int = Field(5432, validation_alias="DB_PORT")
 
-@dataclass(frozen=True)
-class DatabaseConfig:
-    host: str = field(default_factory=lambda: os.getenv("DB_HOST", "localhost"))
-    port: str = field(default_factory=lambda: os.getenv("DB_PORT", "5432"))
-    db_name: str = field(
-        default_factory=lambda: os.getenv(
-            "DB_NAME", os.getenv("POSTGRES_DB", "postgres")
-        )
-    )
-    user: str = field(default_factory=lambda: os.getenv("POSTGRES_USER", "postgres"))
-    password: str = field(
-        default_factory=lambda: os.getenv(
-            "POSTGRES_PASSWORD", os.getenv("DB_PASSWORD", "password")
-        )
+    db_name: str = Field(validation_alias="DB_NAME")
+    user: str = Field(validation_alias="POSTGRES_USER")
+    password: str = Field(validation_alias="POSTGRES_PASSWORD")
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+        frozen=True,
+        populate_by_name=True,
     )
 
     def get_conn_info(self) -> str:
