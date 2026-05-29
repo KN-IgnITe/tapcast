@@ -153,3 +153,45 @@ def test_fetch_executes_query_and_returns_rows(db_config: DatabaseConfig) -> Non
     connection.cursor.assert_called_once()
     cursor.execute.assert_called_once_with("SELECT * FROM test WHERE id = %s", (1,))
     cursor.fetchall.assert_called_once_with()
+
+
+def test_fetch_converts_backend_placeholders(db_config: DatabaseConfig) -> None:
+    client = DatabaseClient(db_config)
+
+    connection = MagicMock()
+    connection.closed = False
+
+    cursor_cm = MagicMock()
+    cursor = MagicMock()
+    cursor_cm.__enter__.return_value = cursor
+    connection.cursor.return_value = cursor_cm
+
+    cursor.fetchall.return_value = []
+    client._connection = connection
+
+    client.fetch("SELECT * FROM sale WHERE bar_id = $1 AND plu = $2", (1, 539))
+
+    cursor.execute.assert_called_once_with(
+        "SELECT * FROM sale WHERE bar_id = %s AND plu = %s", (1, 539)
+    )
+
+
+def test_fetch_orders_backend_placeholder_params(db_config: DatabaseConfig) -> None:
+    client = DatabaseClient(db_config)
+
+    connection = MagicMock()
+    connection.closed = False
+
+    cursor_cm = MagicMock()
+    cursor = MagicMock()
+    cursor_cm.__enter__.return_value = cursor
+    connection.cursor.return_value = cursor_cm
+
+    cursor.fetchall.return_value = []
+    client._connection = connection
+
+    client.fetch("SELECT * FROM sale WHERE plu = $2 OR bar_id = $1", (1, 539))
+
+    cursor.execute.assert_called_once_with(
+        "SELECT * FROM sale WHERE plu = %s OR bar_id = %s", (539, 1)
+    )

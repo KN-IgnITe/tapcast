@@ -1,10 +1,12 @@
 # allow forward references in types without quotes, __enter__ returns DatabaseClient
 from __future__ import annotations
 
+import re
+
 import psycopg
 from psycopg.rows import dict_row
 from types import TracebackType
-from typing import List, LiteralString, Optional
+from typing import List, Optional
 
 from training.database.database_config import DatabaseConfig
 
@@ -48,12 +50,30 @@ class DatabaseClient:
             print(f"An error occurred: {exc_val}")
         self.close()
 
-    def fetch(self, query: LiteralString, params: Optional[tuple] = None) -> List[dict]:
+    @staticmethod
+    def _normalize_query(
+        query: str, params: Optional[tuple] = None
+    ) -> tuple[str, Optional[tuple]]:
+        """Converts $1, $2... style queries to %s and reorders params accordingly."""
+        if params is None:
+            return query, params
+
+        matches = re.findall(r"\$(\d+)", query)
+        if not matches:
+            return query, params
+
+        normalized_params = tuple(params[int(position) - 1] for position in matches)
+        normalized_query = re.sub(r"\$\d+", "%s", query)
+        return normalized_query, normalized_params
+
+    def fetch(self, query: str, params: Optional[tuple] = None) -> List[dict]:
         if not self._connection or self._connection.closed:
             raise ConnectionError(
                 "No connection available. Use 'with DatabaseClient(...) as client'."
             )
 
+        normalized_query, normalized_params = self._normalize_query(query, params)
+
         with self._connection.cursor(row_factory=dict_row) as cur:
-            cur.execute(query, params)
+            cur.execute(normalized_query, normalized_params)
             return cur.fetchall()
