@@ -5,7 +5,6 @@ on:
     branches: [ develop, main ]
 
 jobs:
-  # JOB 1: Detect which files were modified in the Pull Request
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -34,7 +33,6 @@ jobs:
             docs:
               - 'docs/**'
 
-  # JOB 2: Run Backend checks if files in backend/ changed
   backend-tests:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend == 'true' }}
@@ -49,7 +47,6 @@ jobs:
           go-version: '1.22.2'
           cache-dependency-path: backend/go.sum
 
-      # Install buf CLI used by the project's Makefile
       - name: Setup Buf
         uses: bufbuild/buf-setup-action@v1
 
@@ -67,7 +64,6 @@ jobs:
           cd backend
           go test -v ./...
 
-  # JOB 3: Run Inference checks if files in inference/ changed
   inference-tests:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.inference == 'true' }}
@@ -81,7 +77,6 @@ jobs:
         with:
           python-version: '3.11.9'
 
-      # Install buf CLI used by the project's Makefile
       - name: Setup Buf
         uses: bufbuild/buf-setup-action@v1
 
@@ -96,13 +91,13 @@ jobs:
       - name: Run Black formatter check
         run: black --check inference/
 
+      # Zmiana: wymuszamy limit 88 znaków i ignorujemy folder z plikami wygenerowanymi przez protobuf
       - name: Run Flake8 linter
-        run: flake8 inference/
+        run: flake8 inference/ --max-line-length=88 --extend-exclude=inference/src/inference/pb/
 
       - name: Run Mypy static type checker
         run: mypy --ignore-missing-imports inference/
 
-  # JOB 4: Run Training checks if files in training/ changed
   training-tests:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.training == 'true' }}
@@ -124,8 +119,9 @@ jobs:
       - name: Run Black formatter check
         run: black --check training/
 
+      # Zmiana: wymuszamy limit 88 znaków, żeby zsynchronizować z Blackiem
       - name: Run Flake8 linter
-        run: flake8 training/
+        run: flake8 training/ --max-line-length=88
 
       - name: Run Mypy static type checker
         run: mypy --ignore-missing-imports training/
@@ -135,7 +131,6 @@ jobs:
           cd training
           pytest -v
 
-  # JOB 5: Run Frontend checks if files in frontend/ changed
   frontend-tests:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.frontend == 'true' }}
@@ -171,7 +166,6 @@ jobs:
           cd frontend
           npx tsc --noEmit
 
-  # JOB 6: Run Documentation checks if files in docs/ changed
   docs-tests:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.docs == 'true' }}
@@ -180,7 +174,10 @@ jobs:
       - name: Checkout repository code
         uses: actions/checkout@v4
 
+      # Zmiana: dodano exclude dla szablonu ADR
       - name: Run Markdownlint check against modified documentation
         uses: davidanson/markdownlint-cli2-action@v1
         with:
-          globs: 'docs/**/*.{md,markdown}'
+          globs: |
+            docs/**/*.{md,markdown}
+            !docs/adr/_template.md
