@@ -2,7 +2,7 @@ name: PR Conditional Quality Checks
 
 on:
   pull_request:
-    branches: [ develop, main ]
+    branches: [ development, main ]
 
 jobs:
   detect-changes:
