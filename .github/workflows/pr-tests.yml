@@ -1,0 +1,183 @@
+name: PR Conditional Quality Checks
+
+on:
+  pull_request:
+    branches: [ development, main ]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      inference: ${{ steps.filter.outputs.inference }}
+      training: ${{ steps.filter.outputs.training }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Categorize changed files by module paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            inference:
+              - 'inference/**'
+            training:
+              - 'training/**'
+            frontend:
+              - 'frontend/**'
+            docs:
+              - 'docs/**'
+
+  backend-tests:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Go environment
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.2'
+          cache-dependency-path: backend/go.sum
+
+      - name: Setup Buf
+        uses: bufbuild/buf-setup-action@v1
+
+      - name: Generate Protobuf stubs and modern init files
+        run: make proto
+
+      - name: Run Golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.57.2
+          working-directory: backend
+
+      - name: Execute Backend Unit Tests
+        run: |
+          cd backend
+          go test -v ./...
+
+  inference-tests:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.inference == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.9'
+
+      - name: Setup Buf
+        uses: bufbuild/buf-setup-action@v1
+
+      - name: Generate Protobuf stubs and modern init files
+        run: make proto
+
+      - name: Install Python quality tools & dependencies
+        run: |
+          pip install black flake8 mypy
+          if [ -f inference/requirements.txt ]; then pip install -r inference/requirements.txt; fi
+
+      - name: Run Black formatter check
+        run: black --check inference/
+
+      # Zmiana: wymuszamy limit 88 znaków i ignorujemy folder z plikami wygenerowanymi przez protobuf
+      - name: Run Flake8 linter
+        run: flake8 inference/ --max-line-length=88 --extend-exclude=inference/src/inference/pb/
+
+      - name: Run Mypy static type checker
+        run: mypy --ignore-missing-imports inference/
+
+  training-tests:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.training == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.9'
+
+      - name: Install Python quality tools & dependencies
+        run: |
+          pip install black flake8 mypy pytest
+          if [ -f training/requirements.txt ]; then pip install -r training/requirements.txt; fi
+
+      - name: Run Black formatter check
+        run: black --check training/
+
+      # Zmiana: wymuszamy limit 88 znaków, żeby zsynchronizować z Blackiem
+      - name: Run Flake8 linter
+        run: flake8 training/ --max-line-length=88
+
+      - name: Run Mypy static type checker
+        run: mypy --ignore-missing-imports training/
+
+      - name: Execute Training Module Tests
+        run: |
+          cd training
+          pytest -v
+
+  frontend-tests:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.frontend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install node dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run Prettier formatting check
+        run: |
+          cd frontend
+          npx prettier --check "src/**/*.{ts,tsx,js,jsx,css,html}"
+
+      - name: Run ESLint check
+        run: |
+          cd frontend
+          npx eslint .
+
+      - name: Run TypeScript compilation check
+        run: |
+          cd frontend
+          npx tsc --noEmit
+
+  docs-tests:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.docs == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      # Zmiana: dodano exclude dla szablonu ADR
+      - name: Run Markdownlint check against modified documentation
+        uses: davidanson/markdownlint-cli2-action@v1
+        with:
+          globs: |
+            docs/**/*.{md,markdown}
+            !docs/adr/_template.md
