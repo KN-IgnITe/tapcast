@@ -1,64 +1,151 @@
-package api
+package handlers
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
-	"path/filepath"
+	"strconv"
+	"time"
+
+	"github.com/m1kus3q/pubpredictor/backend/internal/client/weather"
+	dbclient "github.com/m1kus3q/pubpredictor/backend/internal/db/client"
+	"github.com/m1kus3q/pubpredictor/backend/internal/db/models"
+	"github.com/m1kus3q/pubpredictor/backend/internal/parser"
+	"gorm.io/gorm"
 )
 
-type UploadResponseXLSX struct {
-	Message  string `json:"message"`
-	Filename string `json:"filename"`
-	Size     int64  `json:"size_bytes"`
+// Holds DB and Weather API dependencies.
+type UploadHandler struct {
+	DBClient      *dbclient.DBClient
+	WeatherClient weather.WeatherClient
 }
 
-func UploadHandlerXLSX(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method != http.MethodPost {
-		http.Error(w, "Metoda niedozwolona", http.StatusMethodNotAllowed)
-		return
-	}
-
-	//z fronta wysylaja FormData
-	file, header, err := r.FormFile("file") //nazwa file to klucz tu musi byc tak jak w froncie
+func (h *UploadHandler) HandleXLSX(w http.ResponseWriter, r *http.Request) {
+	// Get file from multipart form
+	file, _, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "Błąd pobierania pliku", http.StatusBadRequest)
+		http.Error(w, "Failed to read file", http.StatusBadRequest)
 		return
 	}
 	defer func() { _ = file.Close() }()
 
-	//tu juz mamy nasz plik file
-
-	if ext := filepath.Ext(header.Filename); ext != ".xlsx" {
-		http.Error(w, "Dozwolone są tylko pliki .xlsx", http.StatusBadRequest)
-		return
-	}
-
-	size, err := io.Copy(io.Discard, file)
+	// Parse Excel file
+	p := parser.NewParser()
+	raport, err := p.Parse(file)
 	if err != nil {
-		http.Error(w, "Błąd podczas odczytu pliku", http.StatusInternalServerError)
+		http.Error(w, "Parse error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	//przewijamy strumiej na poczatek bo wczesniej przeszlismy przez caly zeby zczytac rozmiar
-	_, err = file.Seek(0, io.SeekStart)
+	if len(raport.Days) == 0 {
+		http.Error(w, "No valid days found", http.StatusBadRequest)
+		return
+	}
+
+	// Find date range for weather data.
+	minDate := raport.Days[0].Date
+	maxDate := raport.Days[0].Date
+	for _, day := range raport.Days {
+		if day.Date.Before(minDate) {
+			minDate = day.Date
+		}
+		if day.Date.After(maxDate) {
+			maxDate = day.Date
+		}
+	}
+
+	// Fetch historical weather
+	weatherData, err := h.WeatherClient.FetchHistoricalWeather(r.Context(), weather.DefaultLat, weather.DefaultLon, minDate, maxDate)
 	if err != nil {
-		http.Error(w, "Błąd resetowania pliku", http.StatusInternalServerError)
+		http.Error(w, "Weather API error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// tu przekazujemy plik do jakies funkcji ktora go przemieli
-	//err = processExcelFile(file)
+	// Map for quick weather lookups
+	weatherMap := make(map[string]weather.WeatherSummary)
+	for _, wData := range weatherData {
+		weatherMap[wData.Date] = wData
+	}
 
-	fmt.Printf("Otrzymano plik: %s (Rozmiar: %d bajtów)\n", header.Filename, size)
+	// Save everything to DB
+	db := h.DBClient.GetDB()
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(UploadResponseXLSX{
-		Message:  "Plik przyjęty pomyślnie",
-		Filename: header.Filename,
-		Size:     size,
+	err = db.Transaction(func(tx *gorm.DB) error {
+
+		const defaultLocationID = 1
+		const defaultBarID = 1
+
+		mockLocation := models.Location{Name: "Mocked City"}
+		if err := tx.FirstOrCreate(&mockLocation, models.Location{LocationID: defaultLocationID}).Error; err != nil {
+			return err
+		}
+
+		mockBar := models.Bar{LocationID: defaultLocationID, Name: "Mocked Pub"}
+		if err := tx.FirstOrCreate(&mockBar, models.Bar{BarID: defaultBarID}).Error; err != nil {
+			return err
+		}
+
+		for _, parsedDay := range raport.Days {
+
+			weekday := parsedDay.Date.Weekday()
+			isWorking := weekday != time.Saturday && weekday != time.Sunday
+
+			dayModel := models.Day{
+				DayDate:   parsedDay.Date,
+				IsWorking: isWorking,
+			}
+			if err := tx.Save(&dayModel).Error; err != nil {
+				return err
+			}
+
+			// Save Weather
+			dateStr := parsedDay.Date.Format(time.DateOnly)
+			if wSummary, exists := weatherMap[dateStr]; exists {
+				weatherModel := models.Weather{
+					WeatherDate:   parsedDay.Date,
+					LocationID:    defaultLocationID,
+					AvgTemp:       wSummary.AvgTemp,
+					TempAmplitude: wSummary.TempAmplitude,
+					Rain:          wSummary.Rain,
+				}
+				if err := tx.Save(&weatherModel).Error; err != nil {
+					return err
+				}
+			}
+
+			// Save Articles and Sales
+			for _, article := range parsedDay.Articles {
+				pluInt, _ := strconv.Atoi(article.PLU)
+
+				articleModel := models.Article{
+					BarID:    defaultBarID,
+					Plu:      pluInt,
+					Category: article.Group,
+				}
+				if err := tx.Save(&articleModel).Error; err != nil {
+					return err
+				}
+
+				saleModel := models.Sale{
+					SaleDate: parsedDay.Date,
+					BarID:    defaultBarID,
+					Plu:      pluInt,
+					Amount:   int(article.Quantity),
+				}
+				if err := tx.Save(&saleModel).Error; err != nil {
+					return err
+				}
+			}
+		}
+		return nil
 	})
+
+	if err != nil {
+		http.Error(w, "DB save error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "data processed successfully"}); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }
