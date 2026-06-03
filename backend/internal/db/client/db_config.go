@@ -1,8 +1,7 @@
 package client
 
 import (
-	"fmt"
-	"os"
+	"github.com/m1kus3q/pubpredictor/backend/internal/utils"
 )
 
 const (
@@ -21,51 +20,36 @@ type DBConfig struct {
 	Port     string
 }
 
-// newNotFoundError creates an error for missing environment variable.
-func newNotFoundError(envName string) error {
-	return fmt.Errorf("missing env variable %s", envName)
-}
-
 // NewDBConfig creates config using only environment variables.
 func NewDBConfig() (*DBConfig, error) {
 	return NewCustomDBConfig("", "", "", "", "")
-}
-
-// getEnv returns custom value or tries to return environment variable.
-func getEnv(envName string, val string) (string, error) {
-	if val == "" {
-		if val = os.Getenv(envName); val == "" {
-			return "", newNotFoundError(envName)
-		}
-	}
-	return val, nil
 }
 
 // NewCustomDBConfig creates new DB config with custom parameters, empty string means value from env.
 func NewCustomDBConfig(host string, user string, password string,
 	name string, port string) (*DBConfig, error) {
 
-	host, err := getEnv(EnvDBHost, host)
+	host, err := utils.GetEnvOrValue(EnvDBHost, host)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err = getEnv(EnvDBUser, user)
+	user, err = utils.GetEnvOrValue(EnvDBUser, user)
 	if err != nil {
 		return nil, err
 	}
 
-	password, err = getEnv(EnvDBPassword, password)
+	password, err = utils.GetEnvOrValue(EnvDBPassword, password)
 	if err != nil {
 		return nil, err
 	}
 
-	name, err = getEnv(EnvDBName, name)
+	name, err = utils.GetEnvOrValue(EnvDBName, name)
 	if err != nil {
 		return nil, err
 	}
 
-	port, err = getEnv(EnvDBPort, port)
+	port, err = utils.GetEnvOrValue(EnvDBPort, port)
 	if err != nil {
 		return nil, err
 	}
