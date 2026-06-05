@@ -25,14 +25,15 @@ class TrainingMatrixBuilder:
 
         df_target = self._initialize_target_rows(df_hist)
 
-        df_target = self._add_exact_lag(df_target, df_hist, lag_days=14)
-        df_target = self._add_exact_lag(df_target, df_hist, lag_days=21)
-        df_target = self._add_total_demand_lag(df_target, df_hist, lag_days=14)
+        df_target = self._add_demand_lag_14d(df_target, df_hist)
+        df_target = self._add_demand_lag_21d(df_target, df_hist)
+
+        df_target = self._add_total_demand_lag_14d(df_target, df_hist)
 
         df_target = self._add_smart_lag(df_target, df_hist)
 
-        df_target = self._add_plu_rolling_median(df_target, df_hist, window=7)
-        df_target = self._add_category_rolling_median(df_target, df_hist, window=7)
+        df_target = self._add_plu_rolling_median_7d(df_target, df_hist)
+        df_target = self._add_category_rolling_median_7d(df_target, df_hist)
 
         return self._format_output(df_target)
 
@@ -63,34 +64,13 @@ class TrainingMatrixBuilder:
 
         return df_target
 
-    def _get_lag_columns(self, lag_days: int) -> tuple[str, str, str]:
-        if lag_days == 14:
-            return (
-                PipelineKey.DEMAND_LAG_14D.value,
-                PipelineKey.DEMAND_LAG_14D_WAS_IMPUTED.value,
-                PipelineKey.DEMAND_LAG_14D_WAS_WINSORIZED.value,
-            )
-
-        if lag_days == 21:
-            return (
-                PipelineKey.DEMAND_LAG_21D.value,
-                PipelineKey.DEMAND_LAG_21D_WAS_IMPUTED.value,
-                PipelineKey.DEMAND_LAG_21D_WAS_WINSORIZED.value,
-            )
-
-        raise ValueError(f"Unsupported lag_days: {lag_days}")
-
-    def _get_total_demand_lag_column(self, lag_days: int) -> str:
-        if lag_days == 14:
-            return PipelineKey.RESTAURANT_TOTAL_DEMAND_LAG_14D.value
-
-        raise ValueError(f"Unsupported total demand lag_days: {lag_days}")
-
     def _add_exact_lag(
         self,
         df_target: pd.DataFrame,
         df_hist: pd.DataFrame,
         lag_days: int,
+        rename_map: dict[str, str],
+        flag_cols: list[str],
     ) -> pd.DataFrame:
         """
         Add exact lag features for a fixed number of days.
@@ -101,29 +81,12 @@ class TrainingMatrixBuilder:
         date_col = DayKey.DATE.value
         plu_col = ArticleKey.PLU.value
 
-        lag_value_col, lag_imputed_col, lag_winsorized_col = self._get_lag_columns(
-            lag_days
-        )
-
-        lag_lookup = df_hist[
-            [
-                date_col,
-                plu_col,
-                PipelineKey.DEMAND_CLEANED.value,
-                PipelineKey.WAS_IMPUTED.value,
-                PipelineKey.WAS_WINSORIZED.value,
-            ]
-        ].copy()
+        cols_to_keep = [date_col, plu_col] + list(rename_map.keys())
+        lag_lookup = df_hist[cols_to_keep].copy()
 
         lag_lookup[date_col] = lag_lookup[date_col] + pd.Timedelta(days=lag_days)
 
-        lag_lookup = lag_lookup.rename(
-            columns={
-                PipelineKey.DEMAND_CLEANED.value: lag_value_col,
-                PipelineKey.WAS_IMPUTED.value: lag_imputed_col,
-                PipelineKey.WAS_WINSORIZED.value: lag_winsorized_col,
-            }
-        )
+        lag_lookup = lag_lookup.rename(columns=rename_map)
 
         merged = df_target.merge(
             lag_lookup,
@@ -131,20 +94,69 @@ class TrainingMatrixBuilder:
             how="left",
         )
 
-        flag_cols = [
-            lag_imputed_col,
-            lag_winsorized_col,
-        ]
-
-        merged[flag_cols] = merged[flag_cols].fillna(0).astype(int)
+        if flag_cols:
+            merged[flag_cols] = merged[flag_cols].fillna(0).astype(int)
 
         return merged
+
+    def _add_demand_lag_14d(
+        self,
+        df_target: pd.DataFrame,
+        df_hist: pd.DataFrame,
+    ) -> pd.DataFrame:
+        rename_map = {
+            PipelineKey.DEMAND_CLEANED.value: PipelineKey.DEMAND_LAG_14D.value,
+            PipelineKey.WAS_IMPUTED.value: PipelineKey.DEMAND_LAG_14D_WAS_IMPUTED.value,
+            PipelineKey.WAS_WINSORIZED.value: (
+                PipelineKey.DEMAND_LAG_14D_WAS_WINSORIZED.value
+            ),
+        }
+
+        flag_cols = [
+            PipelineKey.DEMAND_LAG_14D_WAS_IMPUTED.value,
+            PipelineKey.DEMAND_LAG_14D_WAS_WINSORIZED.value,
+        ]
+
+        return self._add_exact_lag(
+            df_target=df_target,
+            df_hist=df_hist,
+            lag_days=14,
+            rename_map=rename_map,
+            flag_cols=flag_cols,
+        )
+
+    def _add_demand_lag_21d(
+        self,
+        df_target: pd.DataFrame,
+        df_hist: pd.DataFrame,
+    ) -> pd.DataFrame:
+        rename_map = {
+            PipelineKey.DEMAND_CLEANED.value: PipelineKey.DEMAND_LAG_21D.value,
+            PipelineKey.WAS_IMPUTED.value: PipelineKey.DEMAND_LAG_21D_WAS_IMPUTED.value,
+            PipelineKey.WAS_WINSORIZED.value: (
+                PipelineKey.DEMAND_LAG_21D_WAS_WINSORIZED.value
+            ),
+        }
+
+        flag_cols = [
+            PipelineKey.DEMAND_LAG_21D_WAS_IMPUTED.value,
+            PipelineKey.DEMAND_LAG_21D_WAS_WINSORIZED.value,
+        ]
+
+        return self._add_exact_lag(
+            df_target=df_target,
+            df_hist=df_hist,
+            lag_days=21,
+            rename_map=rename_map,
+            flag_cols=flag_cols,
+        )
 
     def _add_total_demand_lag(
         self,
         df_target: pd.DataFrame,
         df_hist: pd.DataFrame,
         lag_days: int,
+        rename_map: dict[str, str],
     ) -> pd.DataFrame:
         """
         Add lag feature for restaurant total demand.
@@ -153,18 +165,35 @@ class TrainingMatrixBuilder:
         """
 
         date_col = DayKey.DATE.value
-        total_col = PipelineKey.RESTAURANT_TOTAL_DEMAND.value
-
-        lag_total_col = self._get_total_demand_lag_column(lag_days)
+        total_col = list(rename_map.keys())[0]
 
         daily_totals = df_hist[[date_col, total_col]].drop_duplicates(date_col).copy()
         daily_totals[date_col] = daily_totals[date_col] + pd.Timedelta(days=lag_days)
-        daily_totals = daily_totals.rename(columns={total_col: lag_total_col})
+        daily_totals = daily_totals.rename(columns=rename_map)
 
         return df_target.merge(
             daily_totals,
             on=[date_col],
             how="left",
+        )
+
+    def _add_total_demand_lag_14d(
+        self,
+        df_target: pd.DataFrame,
+        df_hist: pd.DataFrame,
+    ) -> pd.DataFrame:
+
+        rename_map = {
+            PipelineKey.RESTAURANT_TOTAL_DEMAND.value: (
+                PipelineKey.RESTAURANT_TOTAL_DEMAND_LAG_14D.value
+            ),
+        }
+
+        return self._add_total_demand_lag(
+            df_target=df_target,
+            df_hist=df_hist,
+            lag_days=14,
+            rename_map=rename_map,
         )
 
     def _add_smart_lag(
@@ -241,15 +270,11 @@ class TrainingMatrixBuilder:
             .reset_index(drop=True)
         )
 
-    def _add_plu_rolling_median(
+    def _add_plu_rolling_median_7d(
         self,
         df_target: pd.DataFrame,
         df_hist: pd.DataFrame,
-        window: int,
     ) -> pd.DataFrame:
-        """
-        Add PLU rolling median feature for the past window days.
-        """
 
         rename_map = {
             PipelineKey.DEMAND_CLEANED.value: PipelineKey.PLU_ROLLING_MEDIAN_7D.value,
@@ -260,6 +285,24 @@ class TrainingMatrixBuilder:
                 PipelineKey.PLU_ROLLING_MEDIAN_7D_WINSORIZED_COUNT.value
             ),
         }
+
+        return self._add_plu_rolling_median(
+            df_target=df_target,
+            df_hist=df_hist,
+            window=7,
+            rename_map=rename_map,
+        )
+
+    def _add_plu_rolling_median(
+        self,
+        df_target: pd.DataFrame,
+        df_hist: pd.DataFrame,
+        window: int,
+        rename_map: dict[str, str],
+    ) -> pd.DataFrame:
+        """
+        Add PLU rolling median feature for the past window days.
+        """
 
         count_cols = [
             rename_map[PipelineKey.WAS_IMPUTED.value],
@@ -275,11 +318,37 @@ class TrainingMatrixBuilder:
             count_cols=count_cols,
         )
 
+    def _add_category_rolling_median_7d(
+        self,
+        df_target: pd.DataFrame,
+        df_hist: pd.DataFrame,
+    ) -> pd.DataFrame:
+
+        rename_map = {
+            PipelineKey.DEMAND_CLEANED.value: (
+                PipelineKey.CATEGORY_ROLLING_MEDIAN_7D.value
+            ),
+            PipelineKey.WAS_IMPUTED.value: (
+                PipelineKey.CATEGORY_ROLLING_MEDIAN_7D_IMPUTED_COUNT.value
+            ),
+            PipelineKey.WAS_WINSORIZED.value: (
+                PipelineKey.CATEGORY_ROLLING_MEDIAN_7D_WINSORIZED_COUNT.value
+            ),
+        }
+
+        return self._add_category_rolling_median(
+            df_target=df_target,
+            df_hist=df_hist,
+            window=7,
+            rename_map=rename_map,
+        )
+
     def _add_category_rolling_median(
         self,
         df_target: pd.DataFrame,
         df_hist: pd.DataFrame,
         window: int,
+        rename_map: dict[str, str],
     ) -> pd.DataFrame:
         """
         Add rolling median of daily category total demand and quality counters.
@@ -299,18 +368,6 @@ class TrainingMatrixBuilder:
             .sum()
             .reset_index()
         )
-
-        rename_map = {
-            PipelineKey.DEMAND_CLEANED.value: (
-                PipelineKey.CATEGORY_ROLLING_MEDIAN_7D.value
-            ),
-            PipelineKey.WAS_IMPUTED.value: (
-                PipelineKey.CATEGORY_ROLLING_MEDIAN_7D_IMPUTED_COUNT.value
-            ),
-            PipelineKey.WAS_WINSORIZED.value: (
-                PipelineKey.CATEGORY_ROLLING_MEDIAN_7D_WINSORIZED_COUNT.value
-            ),
-        }
 
         count_cols = [
             rename_map[PipelineKey.WAS_IMPUTED.value],
