@@ -8,8 +8,9 @@ from training.data.mock_data_generator import DayKey
 
 class DataSplitter:
     """
-    Splits data into chronological train and test dataframes,
-    based on a specified test size percentage.
+    Splits data into chronological train and test dataframes
+    based on unique dates, rather than idividual rows
+    ensuring a single date is never fractured between splits.
     """
 
     test_size: float
@@ -24,26 +25,61 @@ class DataSplitter:
         self.test_size = test_size
         self.n_splits = n_splits
 
+    def _get_sorted_unique_dates(self, df: pd.DataFrame) -> pd.Series:
+        """Extracts and sorts unique dates from the dataframe."""
+        date_col = DayKey.DATE.value
+
+        dates = pd.to_datetime(df[date_col])
+
+        return pd.Series(dates.unique()).sort_values().reset_index(drop=True)
+
     def get_final_test_split(
         self, df: pd.DataFrame
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Cuts last x of data for final test set"""
-        df_sorted = df.sort_values(by=DayKey.DATE).reset_index(drop=True)
+        """Cuts last X% of unique dates for final test set"""
 
-        split_idx = int(len(df_sorted) * (1 - self.test_size))
+        date_col = DayKey.DATE.value
 
-        train_val_df = df_sorted.iloc[:split_idx].copy()
-        test_df = df_sorted.iloc[split_idx:].copy()
+        df = df.copy()
+        df[date_col] = pd.to_datetime(df[date_col])
 
-        return train_val_df, test_df
+        unique_dates = self._get_sorted_unique_dates(df)
+
+        split_idx = int(len(unique_dates) * (1 - self.test_size))
+
+        if split_idx == len(unique_dates):
+            split_idx = max(0, len(unique_dates) - 1)
+
+        split_date = unique_dates.iloc[split_idx]
+
+        train_val_df = df[df[date_col] < split_date].copy()
+        test_df = df[df[date_col] >= split_date].copy()
+
+        return (train_val_df.reset_index(drop=True), test_df.reset_index(drop=True))
 
     def get_walk_forward_splits(
         self, df: pd.DataFrame
     ) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
         """
-        Generates the forward window of data,
-        expects sorted data by date
+        Generates the forward window of data using unique dates,
+        yielding arrays of row indices corresponding to train/test subsets.
         """
+
+        date_col = DayKey.DATE.value
+
+        df = df.copy()
+        df[date_col] = pd.to_datetime(df[date_col])
+
+        unique_dates = self._get_sorted_unique_dates(df)
+        date_series = df[date_col].to_numpy()
+
         tscv = TimeSeriesSplit(n_splits=self.n_splits)
 
-        return tscv.split(df)
+        for train_date_idx, test_date_idx in tscv.split(unique_dates):
+            train_dates = unique_dates.iloc[train_date_idx]
+            test_dates = unique_dates.iloc[test_date_idx]
+
+            train_idx = np.where(np.isin(date_series, train_dates))[0]
+            test_idx = np.where(np.isin(date_series, test_dates))[0]
+
+            yield train_idx, test_idx
