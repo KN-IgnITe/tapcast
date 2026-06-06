@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -7,7 +9,7 @@ from training.data.mock_data_generator import DayKey
 
 @pytest.fixture
 def multi_plu_dataframe() -> pd.DataFrame:
-    rows = []
+    rows: list[dict[str, Any]] = []
 
     for date in pd.date_range("2023-01-01", periods=10):
         for plu in [101, 102, 103]:
