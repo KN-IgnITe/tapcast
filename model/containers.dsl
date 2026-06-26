@@ -147,6 +147,13 @@ workspace "TapCast" "Bar inventory demand forecasting system" {
 
         component system.backend "backend_components" {
             include *
+            exclude system.s3
+            exclude system.backend.spreadsheetParser
+            autoLayout lr
+        }
+
+        component system.backend "deferred_parsing_cycle" {
+            include system.backend.api system.backend.spreadsheetIngestor system.backend.spreadsheetParser system.s3 system.database
             autoLayout lr
         }
 
