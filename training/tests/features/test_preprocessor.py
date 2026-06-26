@@ -56,29 +56,41 @@ def test_transform_raises_error_if_not_fitted(dummy_train_data: pd.DataFrame) ->
         processor.transform(dummy_train_data)
 
 
-def test_apply_log_transformer_calculates_log1p_correctly(
+def test_data_processor_does_not_transform_demand_for_xgboost(
+    dummy_train_data: pd.DataFrame,
+) -> None:
+    """Test that the preprocessor does not transform demand features for XGBoost."""
+    processor = DataProcessor(scale_numeric=False)
+
+    transformed_df = processor.fit_transform(dummy_train_data)
+    yest_key = ArticleKey.YESTERDAY_DEMAND.value
+
+    expected_val = dummy_train_data[yest_key].iloc[0]
+    actual_val = transformed_df[yest_key].iloc[0]
+
+    assert np.isclose(expected_val, actual_val), "XGBoost should receive raw data!"
+
+
+def test_data_processor_transforms_demand_for_ridge(
     dummy_train_data: pd.DataFrame,
 ) -> None:
     """
-    Test that _apply__log_transformer correctly applies
-    np.log1p to the target column.
+    Test that for Ridge, demand features
+    are mathematically transformed (log1p + scaled).
     """
-    processor = DataProcessor()
+    processor = DataProcessor(scale_numeric=True)
 
-    df_logged = processor._apply__log_transformer(dummy_train_data)
-
+    transformed_df = processor.fit_transform(dummy_train_data)
     yest_key = ArticleKey.YESTERDAY_DEMAND.value
 
-    expected_val = np.log1p(10.0)
-    actual_val = df_logged[yest_key].iloc[0]
+    raw_val = dummy_train_data[yest_key].iloc[0]
+    actual_val = transformed_df[yest_key].iloc[0]
 
-    assert np.isclose(expected_val, actual_val)
-
-    assert np.isclose(0.0, df_logged[yest_key].iloc[1])
+    assert not np.isclose(raw_val, actual_val), "Ridge should receive transformed data!"
 
 
 def test_fit_transform_creates_correct_columns(dummy_train_data: pd.DataFrame) -> None:
-    """Sprawdza End-to-End proces uczenia preprocesora na zbiorze treningowym."""
+    """Checks that the preprocessor creates the correct columns after transformation."""
     processor = DataProcessor()
 
     proc_df = processor.fit_transform(dummy_train_data)
@@ -98,8 +110,7 @@ def test_transform_ignores_unknown_categories(
     dummy_train_data: pd.DataFrame, dummy_test_data: pd.DataFrame
 ) -> None:
     """
-    Sprawdza, czy model poprawnie ignoruje nowe,
-    niewidziane wcześnie kategorie (handle_unknown='ignore').
+    Checks that unknown categories are ignored during transformation.
     """
     processor = DataProcessor()
 

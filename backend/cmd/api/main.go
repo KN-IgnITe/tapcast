@@ -17,6 +17,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/m1kus3q/pubpredictor/backend/internal/client/weather"
+	dbclient "github.com/m1kus3q/pubpredictor/backend/internal/db/client"
+	"github.com/m1kus3q/pubpredictor/backend/internal/db/models"
+	api "github.com/m1kus3q/pubpredictor/backend/internal/handlers"
 	pb "github.com/m1kus3q/pubpredictor/backend/pkg/pb/ping/v1"
 )
 
@@ -62,11 +66,43 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to gRPC server: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	app := &App{
 		logger:     log.New(os.Stdout, "", log.LstdFlags),
 		pingClient: pb.NewPingServiceClient(conn),
+	}
+
+	// Setup DB
+	dbConfig, err := dbclient.NewDBConfig()
+	if err != nil {
+		log.Fatalf("Missing DB env variables: %v", err)
+	}
+
+	dbClientInstance, err := dbclient.NewDBClient(dbConfig)
+	if err != nil {
+		log.Fatalf("Failed to connect to DB: %v", err)
+	}
+
+	err = dbClientInstance.GetDB().AutoMigrate(
+		&models.Day{},
+		&models.Location{},
+		&models.Bar{},
+		&models.Weather{},
+		&models.Article{},
+		&models.Sale{},
+	)
+
+	if err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
+
+	// Setup Weather Client
+	weatherClientInstance := weather.NewClient()
+
+	uploadHandler := &api.UploadHandler{
+		DBClient:      dbClientInstance,
+		WeatherClient: weatherClientInstance,
 	}
 
 	r := chi.NewRouter()
@@ -84,6 +120,8 @@ func main() {
 	}))
 
 	r.Get("/api/ping", app.pingHandler)
+
+	r.Post("/uploadXLSX", uploadHandler.HandleXLSX)
 
 	srv := &http.Server{
 		Addr:         ":" + backend_port,

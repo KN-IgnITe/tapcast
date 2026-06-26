@@ -6,7 +6,8 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infrastructure/postgres/layout.sql:/docker-entrypoint-initdb.d/layout.sql
+      - ./data_dump.sql:/docker-entrypoint-initdb.d/data_dump.sql
 
   rabbitmq:
     image: rabbitmq:3-management-alpine

@@ -8,12 +8,14 @@ from inference.pb.ping.v1 import ping_pb2, ping_pb2_grpc
 
 
 class PingServiceServicer(ping_pb2_grpc.PingServiceServicer):
-    def Ping(self, request, context):
+    def Ping(
+        self, request: ping_pb2.PingRequest, context: grpc.ServicerContext
+    ) -> ping_pb2.PingResponse:
         logging.info(f"Received ping with message: {request.message}")
         return ping_pb2.PingResponse(message=f"pong from python: {request.message}")
 
 
-def serve():
+def serve() -> None:
     inference_port = os.getenv("INFERENCE_PORT")
 
     if not inference_port:
