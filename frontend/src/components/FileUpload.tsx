@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { DragEvent } from "react";
+const apiUrl = "http://localhost:8080";
 
 export function FileUpload() {
     const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -7,7 +8,7 @@ export function FileUpload() {
     const [responseMessage, setResponseMessage] = useState<string>("");
 
     const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault(); // To nie dla przeglądarki SPADUWA
+        e.preventDefault();
         setIsDragging(true);
     };
 
@@ -25,12 +26,10 @@ export function FileUpload() {
 
             if (droppedFile.name.endsWith(".xlsx")) {
                 setFile(droppedFile);
-                setResponseMessage("Plik gotowy do wysłania.");
+                setResponseMessage("The file is ready for sending.");
             } else {
                 setFile(null);
-                setResponseMessage(
-                    "Błąd: Akceptujemy tylko pliki Excel (.xlsx)!",
-                );
+                setResponseMessage("Error: You can put only Excel file!");
             }
         }
     };
@@ -38,29 +37,25 @@ export function FileUpload() {
     const uploadFile = async () => {
         if (!file) return;
 
-        setResponseMessage("Wysyłanie...");
+        setResponseMessage("Sending...");
 
         const formData = new FormData();
-        formData.append("file", file); // "file" to klucz, pod którym backend szuka pliku
+        formData.append("file", file);
 
         try {
-            const response = await fetch("/api/uploadXLSX", {
-                //todo
+            const response = await fetch(`${apiUrl}/uploadXLSX`, {
                 method: "POST",
                 body: formData,
             });
 
             if (response.ok) {
-                // Zakładamy, że serwer zwraca jakiś tekst lub JSON. Używamy .text() na start.
                 const data = await response.text();
-                setResponseMessage(`Sukces! Serwer odpowiedział: ${data}`);
+                setResponseMessage(`Success! Server answered: ${data}`);
             } else {
-                setResponseMessage(`Błąd serwera: Kod ${response.status}`);
+                setResponseMessage(`Server error: Code ${response.status}`);
             }
         } catch (error) {
-            setResponseMessage(
-                "Błąd sieci. Serwer backendowy prawdopodobnie nie działa.",
-            );
+            setResponseMessage("Network error. Backend out of use!.");
             console.error(error);
         }
     };
@@ -71,7 +66,7 @@ export function FileUpload() {
                 Import danych
             </h2>
 
-            {/* Strefa Drag and Drop */}
+            {/* Drag and Drop */}
             <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -94,7 +89,7 @@ export function FileUpload() {
                 )}
             </div>
 
-            {/* Przycisk wysyłania */}
+            {/* Upload button */}
             <button
                 onClick={uploadFile}
                 disabled={!file}
@@ -103,7 +98,7 @@ export function FileUpload() {
                 Wyślij plik
             </button>
 
-            {/* Ekran odpowiedzi (Display response on screen) */}
+            {/* Response screen */}
             {responseMessage && (
                 <div className="mt-4 p-4 bg-white rounded-xl shadow-sm border border-slate-200 w-full text-center">
                     <p className="text-slate-700 font-medium">
