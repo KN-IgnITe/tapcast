@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./App.css";
+import { FileUpload } from "./components/FileUpload";
 
 type Joke = {
     setup: string;
@@ -54,9 +55,9 @@ function App() {
     }, []);
 
     return (
-        // zamiast style={{ textAlign: "center" ... }}
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans">
-            <div className="w-full max-w-md flex flex-col gap-6 text-center">
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans py-12">
+            <div className="w-full max-w-xl flex flex-col gap-6 text-center">
+                {/* --- SEKCJA LODZIARNI --- */}
                 <span className="text-xl font-semibold text-slate-700">
                     Jaka mamy dziś pogodę?
                 </span>
@@ -92,6 +93,13 @@ function App() {
                 </button>
 
                 <Joke joke={joke} />
+
+                {/* --- SEKCJA IMPORTU PLIKU --- */}
+
+                <div className="w-full h-px bg-slate-200 my-2"></div>
+
+                {/* 2. NASZ NOWY KOMPONENT */}
+                <FileUpload />
             </div>
         </div>
     );
