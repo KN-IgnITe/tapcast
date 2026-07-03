@@ -19,10 +19,10 @@ type Parser struct {
 
 func NewParser() *Parser {
 	return &Parser{
-		GroupColumnIndex:     0, // Kolumna A
-		PLUColumnIndex:       4, // Kolumna E
-		FirstDateColumnIndex: 7, // Kolumna H pierwsza data
-		FirstDataRowIndex:    3, // Dane zaczynają się od wiersza 4 (indeks 3)
+		GroupColumnIndex:     0, // Column A
+		PLUColumnIndex:       4, // Column E
+		FirstDateColumnIndex: 7, // Column H first date
+		FirstDataRowIndex:    3, // Data starts from row 4 (index 3)
 	}
 }
 
@@ -33,27 +33,27 @@ func getCell(row []string, colIndex int) string {
 	return ""
 }
 
-func (p *Parser) Parse(r io.Reader) (Raport, error) {
-	raport := Raport{}
+func (p *Parser) Parse(r io.Reader) (Report, error) {
+	report := Report{}
 
 	f, err := excelize.OpenReader(r)
 	if err != nil {
-		return raport, fmt.Errorf("błąd otwierania pliku excel: %w", err)
+		return report, fmt.Errorf("error opening excel file: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 
 	sheetName := f.GetSheetName(f.GetActiveSheetIndex())
 	rows, err := f.GetRows(sheetName)
 	if err != nil {
-		return raport, fmt.Errorf("błąd pobierania wierszy: %w", err)
+		return report, fmt.Errorf("error getting rows: %w", err)
 	}
 
 	if len(rows) < 4 {
-		return raport, fmt.Errorf("plik nie posiada wystarczającej liczby wierszy")
+		return report, fmt.Errorf("file does not have enough rows")
 	}
 
-	indicatorRow := rows[1] // Wiersz określający czy to nowy dzień (zawiera nazwy zmiany np. 349)
-	datesRow := rows[2]     // Wiersz zawierający daty
+	indicatorRow := rows[1] // Row indicating if it's a new day (contains shift names e.g., 349)
+	datesRow := rows[2]     // Row containing dates
 	maxCols := len(datesRow)
 
 	for colIdx := p.FirstDateColumnIndex; colIdx < maxCols; colIdx++ {
@@ -78,35 +78,36 @@ func (p *Parser) Parse(r io.Reader) (Raport, error) {
 				Articles: []Article{},
 			}
 			p.mergeArticles(&newDay, articles)
-			raport.Days = append(raport.Days, newDay)
+			report.Days = append(report.Days, newDay)
 
 		} else {
-			if len(raport.Days) == 0 {
+			if len(report.Days) == 0 {
 				continue
 			}
-			lastDayIdx := len(raport.Days) - 1
-			p.mergeArticles(&raport.Days[lastDayIdx], articles)
+			lastDayIdx := len(report.Days) - 1
+			p.mergeArticles(&report.Days[lastDayIdx], articles)
 		}
 	}
 
-	return raport, nil
+	return report, nil
 }
 
 func (p *Parser) extractArticlesFromColumn(rows [][]string, quantityColIdx int) []Article {
 	var articles []Article
-	currentGroup := "" //group jest tylko w jedym wierszu i potem jest puste az nie pojawi sie nowy grup
-	currentPLU := ""   // nieraz jest PLU a nizej jest puste ale to puste tez jest tym PLU wiec tak samo
+	currentGroup := ""
+	currentPLU := ""
 
 	for rowIdx := p.FirstDataRowIndex; rowIdx < len(rows); rowIdx++ {
 		groupCell := getCell(rows[rowIdx], p.GroupColumnIndex)
-		// pomijamy nazwe zmiany RAZEM bo manualnie dodajemy z dat w na jednej zmianie
+
+		// skip shift name TOTAL (razem) because we manually add from dates in one shift
 		if groupCell != "" && !strings.Contains(strings.ToLower(groupCell), "razem") {
 			currentGroup = groupCell
 		}
 
 		pluCell := getCell(rows[rowIdx], p.PLUColumnIndex)
 
-		//pomijamy PLU razem bo jest bez sensu
+		// skip PLU total (razem)
 		if strings.Contains(strings.ToLower(pluCell), "razem") {
 			currentPLU = ""
 			continue
