@@ -11,10 +11,10 @@ type Article struct {
 }
 
 type Day struct {
-	Date     time.Time `json:"data"`
+	Date     time.Time `json:"date"`
 	Articles []Article `json:"articles"`
 }
 
-type Raport struct {
+type Report struct {
 	Days []Day `json:"days"`
 }
