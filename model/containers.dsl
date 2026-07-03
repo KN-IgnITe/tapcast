@@ -37,6 +37,7 @@ workspace "TapCast" "Bar inventory demand forecasting system" {
                 scheduler = component "Scheduler" "Schedules external API polling." "Go Cron job scheduler"
                 batchDownloader = component "Batch Downloader" "Downloads batch data for model training." "Go service"
                 auth = component "Authentication" "Handles user authentication and authorization." "Go service"
+                spreadsheetIngestor = component "Spreadsheet Ingestor" "Uploads the XSLX files to S3, waiting for deferred parsing"
                 spreadsheetParser = component "Spreadsheet Parser" "Parses uploaded XSLX files and extracts relevant data." "Go service"
                 inference_service = component "Inference Service" "Handles gRPC requests for predictions from the inference service." "Go gRPC client"
                 weather_facade = component "Weather Facade" "Facilitates communication with the Weather API." "Go service"
@@ -50,11 +51,12 @@ workspace "TapCast" "Bar inventory demand forecasting system" {
 
                 api -> auth "Delegates authentication to"
                 api -> inference_service "Requests predictions from"
-                api -> spreadsheetParser "Sends uploaded XSLX data to" "REST"
+                api -> spreadsheetIngestor "Sends uploaded XSLX data to" "Go Structs"
 
                 backend.auth -> oauth "Authenticates users with" "OAuth 2.0"
                 backend.scheduler -> weather_facade "Polls for upcoming data from" "REST"
                 backend.scheduler -> events_facade "Polls for upcoming data from" "REST"
+                backend.spreadsheetIngestor -> spreadsheetParser "Sends notification to"
                 backend.batchDownloader -> weather_facade "Requests historical data from" "REST"
                 backend.batchDownloader -> events_facade "Requests historical data from" "REST"
 
@@ -116,6 +118,8 @@ workspace "TapCast" "Bar inventory demand forecasting system" {
 
 
             s3 = container "S3" "Provides object storage for machine learning models." "MinIO" {
+                backend.spreadsheetIngestor -> s3 "Uploads raw XLSX to"
+                backend.spreadsheetParser -> s3 "Downloads XLSX data from"
                 training.exporter -> s3 "Uploads trained model to" "MinIO API"
                 inference.model_loader -> s3 "Downloads latest model from" "MinIO API"
             }
@@ -143,6 +147,13 @@ workspace "TapCast" "Bar inventory demand forecasting system" {
 
         component system.backend "backend_components" {
             include *
+            exclude system.s3
+            exclude system.backend.spreadsheetParser
+            autoLayout lr
+        }
+
+        component system.backend "deferred_parsing_cycle" {
+            include system.backend.api system.backend.spreadsheetIngestor system.backend.spreadsheetParser system.s3 system.database
             autoLayout lr
         }
 
