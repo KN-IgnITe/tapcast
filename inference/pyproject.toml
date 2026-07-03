@@ -9,8 +9,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "grpcio (>=1.78.0,<2.0.0)",
-    "protobuf (>=7.34.1,<8.0.0)",
-    "types-grpcio (>=1.0.0.20251009,<2.0.0.0)"
+    "protobuf (>=7.35.0)",
+    "types-grpcio (>=1.0.0.20251009,<2.0.0.0)",
+    "pydantic (>=2.13.4,<3.0.0)",
+    "pydantic-settings (>=2.14.2,<3.0.0)",
+    "boto3 (>=1.43.39,<2.0.0)",
+    "pytest (>=9.1.1,<10.0.0)"
 ]
 
 [tool.poetry]
