@@ -17,10 +17,15 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	api "github.com/m1kus3q/pubpredictor/backend/internal/handlers"
+
 	"github.com/m1kus3q/pubpredictor/backend/internal/client/weather"
 	dbclient "github.com/m1kus3q/pubpredictor/backend/internal/db/client"
 	"github.com/m1kus3q/pubpredictor/backend/internal/db/models"
-	api "github.com/m1kus3q/pubpredictor/backend/internal/handlers"
+	"github.com/m1kus3q/pubpredictor/backend/internal/message_channel"
+	"github.com/m1kus3q/pubpredictor/backend/internal/workers"
+
+	minio "github.com/m1kus3q/pubpredictor/backend/internal/minio/client"
 	pb "github.com/m1kus3q/pubpredictor/backend/pkg/pb/ping/v1"
 )
 
@@ -97,10 +102,34 @@ func main() {
 		log.Fatalf("Failed to auto-migrate database: %v", err)
 	}
 
-	// Setup Weather Client
+	// Setup
+	ctx := context.Background()
 	weatherClientInstance := weather.NewClient()
+	minioClient, err := minio.NewMinIOClientFromEnv(ctx)
+	if err != nil {
+		log.Fatalf("Failed to create MinIO client: %v", err)
+	}
+
+	uploadBucketName := "files"
+
+	jobs_size := 10
+	queue := message_channel.NewLocalQueue(jobs_size)
+
+	err = minioClient.CreateBucketIfNotExists(ctx, uploadBucketName)
+	if err != nil {
+		log.Fatalf("Failed to create bucket %q: %v", uploadBucketName, err)
+	}
 
 	uploadHandler := &api.UploadHandler{
+		StorageClient:    minioClient,
+		UploadBucketName: uploadBucketName,
+		Queue:            queue,
+	}
+
+	worker := &workers.UploadWorker{
+		StorageClient: minioClient,
+		BucketName:    uploadBucketName,
+		Queue:         queue,
 		DBClient:      dbClientInstance,
 		WeatherClient: weatherClientInstance,
 	}
@@ -122,6 +151,7 @@ func main() {
 	r.Get("/api/ping", app.pingHandler)
 
 	r.Post("/uploadXLSX", uploadHandler.HandleXLSX)
+	go worker.Run()
 
 	srv := &http.Server{
 		Addr:         ":" + backend_port,
