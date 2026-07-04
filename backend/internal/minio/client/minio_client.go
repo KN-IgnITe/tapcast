@@ -11,6 +11,7 @@ import (
 	"github.com/aws/smithy-go/ptr"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 type MinIOClient struct {
@@ -50,8 +51,8 @@ func NewMinIOClientFromConfig(minIOConfig *MinIOConfig, ctx context.Context) (*M
 	}, nil
 }
 
-func (minIOClient *MinIOClient) CreateBucket(ctx context.Context, bucketName string) error {
-	_, err := minIOClient.client.CreateBucket(
+func (c *MinIOClient) CreateBucket(ctx context.Context, bucketName string) error {
+	_, err := c.client.CreateBucket(
 		ctx,
 		&s3.CreateBucketInput{
 			Bucket: ptr.String(bucketName),
@@ -61,8 +62,8 @@ func (minIOClient *MinIOClient) CreateBucket(ctx context.Context, bucketName str
 	return err
 }
 
-func (minIOClient *MinIOClient) CreateBucketIfNotExists(ctx context.Context, bucketName string) error {
-	bucketList, err := minIOClient.ListBuckets(ctx)
+func (c *MinIOClient) CreateBucketIfNotExists(ctx context.Context, bucketName string) error {
+	bucketList, err := c.ListBuckets(ctx)
 	if err != nil {
 		return err
 	}
@@ -70,11 +71,11 @@ func (minIOClient *MinIOClient) CreateBucketIfNotExists(ctx context.Context, buc
 		return nil
 	}
 
-	return minIOClient.CreateBucket(ctx, bucketName)
+	return c.CreateBucket(ctx, bucketName)
 }
 
-func (minIOClient *MinIOClient) RemoveBucket(ctx context.Context, bucketName string) error {
-	_, err := minIOClient.client.DeleteBucket(
+func (c *MinIOClient) RemoveBucket(ctx context.Context, bucketName string) error {
+	_, err := c.client.DeleteBucket(
 		ctx,
 		&s3.DeleteBucketInput{
 			Bucket: ptr.String(bucketName),
@@ -83,8 +84,8 @@ func (minIOClient *MinIOClient) RemoveBucket(ctx context.Context, bucketName str
 	return err
 }
 
-func (minIOClient *MinIOClient) ListBuckets(ctx context.Context) ([]string, error) {
-	output, err := minIOClient.client.ListBuckets(ctx, &s3.ListBucketsInput{})
+func (c *MinIOClient) ListBuckets(ctx context.Context) ([]string, error) {
+	output, err := c.client.ListBuckets(ctx, &s3.ListBucketsInput{})
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +101,8 @@ func (minIOClient *MinIOClient) ListBuckets(ctx context.Context) ([]string, erro
 	return bucketNames, nil
 }
 
-func (minIOClient *MinIOClient) UploadObject(ctx context.Context, bucketName string, key string, body io.Reader) error {
-	_, err := minIOClient.client.PutObject(
+func (c *MinIOClient) UploadObject(ctx context.Context, bucketName string, key string, body io.Reader) error {
+	_, err := c.client.PutObject(
 		ctx,
 		&s3.PutObjectInput{
 			Bucket: ptr.String(bucketName),
@@ -112,8 +113,8 @@ func (minIOClient *MinIOClient) UploadObject(ctx context.Context, bucketName str
 	return err
 }
 
-func (minIOClient *MinIOClient) RemoveObject(ctx context.Context, bucketName string, key string) error {
-	_, err := minIOClient.client.DeleteObject(
+func (c *MinIOClient) RemoveObject(ctx context.Context, bucketName string, key string) error {
+	_, err := c.client.DeleteObject(
 		ctx,
 		&s3.DeleteObjectInput{
 			Bucket: ptr.String(bucketName),
@@ -123,9 +124,28 @@ func (minIOClient *MinIOClient) RemoveObject(ctx context.Context, bucketName str
 
 	return err
 }
+func (c *MinIOClient) ListObjectsKeys(ctx context.Context, bucketName string) ([]string, error) {
+	output, err := c.client.ListObjectsV2(
+		ctx,
+		&s3.ListObjectsV2Input{
+			Bucket: ptr.String(bucketName),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
 
-func (minIOClient *MinIOClient) GetObject(ctx context.Context, bucketName string, key string) (io.ReadCloser, error) {
-	object, err := minIOClient.client.GetObject(
+	keys := make([]string, 0, len(output.Contents))
+
+	for _, obj := range output.Contents {
+		keys = append(keys, *obj.Key)
+	}
+
+	return keys, nil
+}
+
+func (c *MinIOClient) GetObject(ctx context.Context, bucketName string, key string) (io.ReadCloser, error) {
+	object, err := c.client.GetObject(
 		ctx,
 		&s3.GetObjectInput{
 			Bucket: ptr.String(bucketName),
@@ -136,4 +156,90 @@ func (minIOClient *MinIOClient) GetObject(ctx context.Context, bucketName string
 		return nil, err
 	}
 	return object.Body, nil
+}
+
+func (c *MinIOClient) SetTags(ctx context.Context, bucketName string, key string, tags []types.Tag) error {
+	tagging := &types.Tagging{
+		TagSet: tags,
+	}
+	_, err := c.client.PutObjectTagging(
+		ctx,
+		&s3.PutObjectTaggingInput{
+			Bucket:  ptr.String(bucketName),
+			Key:     ptr.String(key),
+			Tagging: tagging,
+		},
+	)
+	return err
+}
+
+func (c *MinIOClient) GetTags(ctx context.Context, bucketName string, key string) ([]types.Tag, error) {
+	object, err := c.client.GetObjectTagging(
+		ctx,
+		&s3.GetObjectTaggingInput{
+			Bucket: ptr.String(bucketName),
+			Key:    ptr.String(key),
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+	return object.TagSet, nil
+}
+
+func (c *MinIOClient) SetTag(ctx context.Context, bucketName string, key string,
+	newTagKey string, newTagValue string) error {
+	tags, err := c.GetTags(ctx, bucketName, key)
+	if err != nil {
+		return err
+	}
+	found := false
+	for i := range tags {
+		if newTagKey == *tags[i].Key {
+			tags[i].Value = &newTagValue
+			found = true
+			break
+		}
+	}
+	if !found {
+		tags = append(tags, types.Tag{
+			Key:   &newTagKey,
+			Value: &newTagValue,
+		})
+	}
+
+	err = c.SetTags(ctx, bucketName, key, tags)
+	return err
+}
+
+func (c *MinIOClient) GetTag(ctx context.Context, bucketName string,
+	objectKey string, tagKey string) (*string, error) {
+	tags, err := c.GetTags(ctx, bucketName, objectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, tag := range tags {
+		if tagKey == *tag.Key {
+			return tag.Value, nil
+		}
+	}
+	return nil, nil
+}
+
+func (c *MinIOClient) ClearBucket(ctx context.Context, bucketName string) error {
+	keys, err := c.ListObjectsKeys(ctx, bucketName)
+	if err != nil {
+		return err
+	}
+
+	for _, key := range keys {
+		if err == nil {
+			err = c.RemoveObject(ctx, bucketName, key)
+		} else {
+			_ = c.RemoveObject(ctx, bucketName, key)
+		}
+	}
+	return err
 }
