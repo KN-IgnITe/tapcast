@@ -1,5 +1,7 @@
 package message_channel
 
+// MessageQueue defines the communication channel between the HTTP server
+// and background workers.
 type MessageQueue interface {
 	Publish(job string) error
 	Subscribe() (<-chan string, error)
