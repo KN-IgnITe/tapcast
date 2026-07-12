@@ -82,6 +82,7 @@ def test_flatten_data_creates_correct_flat_structure(mock_json_data: dict) -> No
     df = loader._flatten_data(mock_json_data)
 
     assert len(df) == 4
+    assert all(type(column) is str for column in df.columns)
 
     assert df.iloc[0][ArticleKey.PLU] == 123
     assert df.iloc[0][WeatherKey.AVG_TEMP] == 10.7
@@ -108,4 +109,5 @@ def test_load_and_process_end_to_end(tmp_path: Path, mock_json_data: dict) -> No
     assert len(df) == 4
 
     assert pd.api.types.is_datetime64_any_dtype(df[DayKey.DATE])
+    assert all(type(column) is str for column in df.columns)
     assert not df.empty
