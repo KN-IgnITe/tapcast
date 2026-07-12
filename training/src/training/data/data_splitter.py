@@ -83,3 +83,36 @@ class DataSplitter:
             test_idx = np.where(np.isin(date_series, test_dates))[0]
 
             yield train_idx, test_idx
+
+    def get_inner_validation_split(
+        self,
+        df: pd.DataFrame,
+        validation_size: float = 0.15,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Split a training fold into inner train and early-stop validation."""
+
+        if not 0 < validation_size < 1:
+            raise ValueError("validation_size must be between 0 and 1.")
+
+        date_col = DayKey.DATE.value
+
+        data = df.copy()
+        data[date_col] = pd.to_datetime(data[date_col])
+
+        unique_dates = self._get_sorted_unique_dates(data)
+
+        if len(unique_dates) < 2:
+            raise ValueError("At least two unique dates are required.")
+
+        split_idx = int(len(unique_dates) * (1 - validation_size))
+        split_idx = min(max(split_idx, 1), len(unique_dates) - 1)
+
+        split_date = unique_dates.iloc[split_idx]
+
+        inner_train = data[data[date_col] < split_date].copy()
+        early_stop_val = data[data[date_col] >= split_date].copy()
+
+        return (
+            inner_train.reset_index(drop=True),
+            early_stop_val.reset_index(drop=True),
+        )
