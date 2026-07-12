@@ -44,7 +44,7 @@ class ExporterPaths:
                 break
 
         return cls(
-            query_path=project_root / "infrastructure" / "postgres" / "query.sql",
+            query_path=project_root / "infrastructure" / "postgres" / "query_v2.sql",
             contract_path=current_dir.with_name("contract.json"),
             output_path=project_root / "training" / "data" / "raw" / "sql_export.json",
         )
