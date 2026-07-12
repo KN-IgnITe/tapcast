@@ -50,17 +50,16 @@ class TrainingMatrixBuilder:
         )
 
     def _initialize_target_rows(self, df_hist: pd.DataFrame) -> pd.DataFrame:
-        """
-        Initialize target rows for the training matrix.
-        Maps demand_cleaned to target_demand.
-        """
+        """Initialize rows and map raw demand to target demand"""
 
         df_target = df_hist.copy()
+
         date_col = DayKey.DATE.value
-        clean_col = PipelineKey.DEMAND_CLEANED.value
+        raw_demand_col = PipelineKey.DEMAND_RAW.value
+        target_col = PipelineKey.TARGET_DEMAND.value
 
         df_target[PipelineKey.DAY_OF_MONTH.value] = df_target[date_col].dt.day
-        df_target[PipelineKey.TARGET_DEMAND.value] = df_target[clean_col]
+        df_target[target_col] = df_target[raw_demand_col]
 
         return df_target
 
@@ -467,4 +466,7 @@ class TrainingMatrixBuilder:
         if missing_columns:
             raise ValueError(f"Missing training matrix columns: {missing_columns}")
 
-        return df[expected_columns].copy()
+        output = df[expected_columns].copy()
+        output.columns = expected_columns
+
+        return output

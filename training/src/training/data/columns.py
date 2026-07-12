@@ -37,3 +37,6 @@ class PipelineKey(Enum):
     RESTAURANT_TOTAL_DEMAND_LAG_14D = "restaurant_total_demand_lag_14d"
 
     TARGET_DEMAND = "target_demand"
+
+    PREDICTION = "prediction"
+    BACKTEST_FOLD = "backtest_fold"
