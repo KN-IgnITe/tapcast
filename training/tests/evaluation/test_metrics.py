@@ -2,6 +2,7 @@ from typing import cast
 
 import numpy as np
 import pandas as pd
+from typing import cast
 
 import pytest
 from training.evaluation.metrics import RegressionMetrics
@@ -40,11 +41,20 @@ def test_wape_returns_zero_when_actuals_and_predictions_are_zero() -> None:
     assert RegressionMetrics.calculate_wape(y_true, y_pred) == 0.0
 
 
-def test_wape_returns_inf_when_actuals_are_zero_but_predictions_are_not() -> None:
+def test_wape_returns_nan_when_actuals_are_zero_but_predictions_are_not() -> None:
     y_true = pd.Series([0, 0, 0])
     y_pred = pd.Series([1, 2, 3])
 
-    assert RegressionMetrics.calculate_wape(y_true, y_pred) == float("inf")
+    assert np.isnan(RegressionMetrics.calculate_wape(y_true, y_pred))
+
+
+def test_r2_is_nan_for_single_observation() -> None:
+    metrics = RegressionMetrics.calculate(
+        y_true=pd.Series([1.0]),
+        y_pred=pd.Series([1.5]),
+    )
+
+    assert np.isnan(metrics["R2"])
 
 
 def test_calculate_for_group_value_returns_metrics_for_single_plu(
