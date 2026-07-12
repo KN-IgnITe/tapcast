@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "config": {
+    "winsorized_quantile": 0.99,
+    "min_winsorization_observations": 20,
+    "enable_winsorization": true,
+    "enable_oos_imputation": false
+  },
+  "winsorization_thresholds": [
+    {
+      "plu": 50,
+      "threshold": 31.0
+    },
+    {
+      "plu": 54,
+      "threshold": 7.360000000000014
+    },
+    {
+      "plu": 57,
+      "threshold": 19.85000000000008
+    },
+    {
+      "plu": 60,
+      "threshold": 9.25
+    },
+    {
+      "plu": 62,
+      "threshold": 13.009999999999962
+    },
+    {
+      "plu": 64,
+      "threshold": 4.8799999999999955
+    },
+    {
+      "plu": 65,
+      "threshold": 6.199999999999989
+    },
+    {
+      "plu": 68,
+      "threshold": 7.659999999999997
+    },
+    {
+      "plu": 70,
+      "threshold": 10.689999999999998
+    },
+    {
+      "plu": 72,
+      "threshold": 19.879999999999995
+    },
+    {
+      "plu": 85,
+      "threshold": 12.0
+    },
+    {
+      "plu": 89,
+      "threshold": 10.0
+    },
+    {
+      "plu": 90,
+      "threshold": 9.0
+    },
+    {
+      "plu": 92,
+      "threshold": 9.699999999999989
+    },
+    {
+      "plu": 93,
+      "threshold": 3.6599999999999966
+    },
+    {
+      "plu": 94,
+      "threshold": 28.40000000000009
+    },
+    {
+      "plu": 95,
+      "threshold": 4.0
+    },
+    {
+      "plu": 96,
+      "threshold": 50.43999999999994
+    },
+    {
+      "plu": 98,
+      "threshold": 6.180000000000007
+    },
+    {
+      "plu": 99,
+      "threshold": 62.62999999999994
+    },
+    {
+      "plu": 100,
+      "threshold": 18.75999999999995
+    },
+    {
+      "plu": 103,
+      "threshold": 8.0
+    },
+    {
+      "plu": 104,
+      "threshold": 12.0
+    },
+    {
+      "plu": 106,
+      "threshold": 11.0
+    },
+    {
+      "plu": 107,
+      "threshold": 10.120000000000005
+    },
+    {
+      "plu": 169,
+      "threshold": 20.360000000000014
+    },
+    {
+      "plu": 537,
+      "threshold": 13.0
+    },
+    {
+      "plu": 539,
+      "threshold": 61.41999999999996
+    },
+    {
+      "plu": 540,
+      "threshold": 3.759999999999998
+    },
+    {
+      "plu": 542,
+      "threshold": 62.110000000000014
+    },
+    {
+      "plu": 544,
+      "threshold": 19.340000000000003
+    },
+    {
+      "plu": 545,
+      "threshold": 33.0
+    },
+    {
+      "plu": 565,
+      "threshold": 5.0
+    },
+    {
+      "plu": 602,
+      "threshold": 7.939999999999998
+    },
+    {
+      "plu": 647,
+      "threshold": 4.0
+    },
+    {
+      "plu": 686,
+      "threshold": 2.6599999999999966
+    },
+    {
+      "plu": 696,
+      "threshold": 9.0
+    },
+    {
+      "plu": 700,
+      "threshold": 8.599999999999966
+    },
+    {
+      "plu": 701,
+      "threshold": 15.0
+    },
+    {
+      "plu": 765,
+      "threshold": 5.219999999999999
+    },
+    {
+      "plu": 766,
+      "threshold": 19.0
+    },
+    {
+      "plu": 772,
+      "threshold": 8.299999999999997
+    },
+    {
+      "plu": 788,
+      "threshold": 6.0
+    },
+    {
+      "plu": 789,
+      "threshold": 7.109999999999992
+    },
+    {
+      "plu": 790,
+      "threshold": 7.45000000000001
+    },
+    {
+      "plu": 791,
+      "threshold": 7.289999999999999
+    },
+    {
+      "plu": 792,
+      "threshold": 6.0
+    },
+    {
+      "plu": 793,
+      "threshold": 9.0
+    },
+    {
+      "plu": 794,
+      "threshold": 7.0
+    },
+    {
+      "plu": 795,
+      "threshold": 5.0
+    },
+    {
+      "plu": 796,
+      "threshold": 7.0
+    },
+    {
+      "plu": 797,
+      "threshold": 9.0
+    },
+    {
+      "plu": 802,
+      "threshold": 8.460000000000008
+    },
+    {
+      "plu": 848,
+      "threshold": 20.0
+    },
+    {
+      "plu": 859,
+      "threshold": 6.0
+    },
+    {
+      "plu": 865,
+      "threshold": 19.340000000000003
+    },
+    {
+      "plu": 866,
+      "threshold": 8.0
+    },
+    {
+      "plu": 867,
+      "threshold": 39.360000000000014
+    },
+    {
+      "plu": 874,
+      "threshold": 27.0
+    },
+    {
+      "plu": 885,
+      "threshold": 7.439999999999998
+    },
+    {
+      "plu": 886,
+      "threshold": 65.30000000000007
+    },
+    {
+      "plu": 887,
+      "threshold": 6.0
+    },
+    {
+      "plu": 888,
+      "threshold": 4.0
+    },
+    {
+      "plu": 889,
+      "threshold": 6.269999999999996
+    },
+    {
+      "plu": 890,
+      "threshold": 8.0
+    },
+    {
+      "plu": 891,
+      "threshold": 5.0
+    },
+    {
+      "plu": 892,
+      "threshold": 30.579999999999984
+    },
+    {
+      "plu": 893,
+      "threshold": 12.069999999999993
+    },
+    {
+      "plu": 900,
+      "threshold": 458.34999999999997
+    },
+    {
+      "plu": 909,
+      "threshold": 4.0
+    },
+    {
+      "plu": 917,
+      "threshold": 167.07999999999998
+    },
+    {
+      "plu": 932,
+      "threshold": 3.0
+    },
+    {
+      "plu": 933,
+      "threshold": 9.260000000000005
+    },
+    {
+      "plu": 934,
+      "threshold": 5.630000000000003
+    },
+    {
+      "plu": 935,
+      "threshold": 7.960000000000008
+    },
+    {
+      "plu": 936,
+      "threshold": 12.0
+    },
+    {
+      "plu": 937,
+      "threshold": 10.519999999999996
+    },
+    {
+      "plu": 938,
+      "threshold": 11.0
+    },
+    {
+      "plu": 939,
+      "threshold": 55.549999999999926
+    },
+    {
+      "plu": 940,
+      "threshold": 13.650000000000006
+    },
+    {
+      "plu": 941,
+      "threshold": 6.0
+    },
+    {
+      "plu": 942,
+      "threshold": 29.46
+    },
+    {
+      "plu": 944,
+      "threshold": 39.51999999999998
+    },
+    {
+      "plu": 948,
+      "threshold": 164.14
+    }
+  ],
+  "plu_medians": [],
+  "plu_dow_medians": [],
+  "popular_plu": []
+}
