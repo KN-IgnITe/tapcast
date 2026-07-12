@@ -1,126 +1,183 @@
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.api.types import CategoricalDtype
+from training.data.columns import PipelineKey
 from training.data.mock_data_generator import ArticleKey, DayKey, WeatherKey
-from training.features.preprocessor import DataProcessor
+from training.features.preprocessor import ModelPreprocessor
 
 
 @pytest.fixture
 def dummy_train_data() -> pd.DataFrame:
-    """Fixture to create dummy training data for testing."""
+    """Create a small training matrix."""
     return pd.DataFrame(
         {
-            WeatherKey.AVG_TEMP.value: [10.0, 15.0, 20.0],
-            WeatherKey.TEMP_AMPLITUDE.value: [2.0, 3.0, 4.0],
-            WeatherKey.RAIN.value: [0.0, 1.5, 0.0],
-            ArticleKey.YESTERDAY_DEMAND.value: [10, 0, 50],
-            ArticleKey.WEEK_AGO_DEMAND.value: [15, 5, 45],
-            DayKey.DAY_OF_WEEK.value: [1, 2, 1],
-            ArticleKey.CATEGORY.value: [1, 2, 3],
+            DayKey.DATE.value: pd.to_datetime(
+                ["2026-01-01", "2026-01-02", "2026-01-03"]
+            ),
             ArticleKey.PLU.value: [101, 102, 101],
-            ArticleKey.DEMAND.value: [12, 2, 55],
-            DayKey.DATE.value: ["2023-01-01", "2023-01-02", "2023-01-03"],
+            ArticleKey.CATEGORY.value: [1, 2, 1],
+            WeatherKey.AVG_TEMP.value: [10.0, 15.0, 20.0],
+            PipelineKey.DEMAND_LAG_14D.value: [8.0, 12.0, 16.0],
+            PipelineKey.TARGET_DEMAND.value: [10, 20, 30],
         }
     )
 
 
 @pytest.fixture
 def dummy_test_data() -> pd.DataFrame:
-    """
-    Fixture to create dummy test data for testing.
-    This data includes an unknown PLU (999) to test if
-    handle_unknown="ignore" in OneHotEncoder works correctly.
-    """
+    """Create validation data containing unknown categories."""
     return pd.DataFrame(
         {
-            WeatherKey.AVG_TEMP.value: [12.0],
-            WeatherKey.TEMP_AMPLITUDE.value: [2.5],
-            WeatherKey.RAIN.value: [0.0],
-            ArticleKey.YESTERDAY_DEMAND.value: [12],
-            ArticleKey.WEEK_AGO_DEMAND.value: [14],
-            DayKey.DAY_OF_WEEK.value: [1],
-            ArticleKey.CATEGORY.value: [1],
+            DayKey.DATE.value: pd.to_datetime(["2026-01-04"]),
             ArticleKey.PLU.value: [999],
-            ArticleKey.DEMAND.value: [15],
-            DayKey.DATE.value: ["2023-01-04"],
+            ArticleKey.CATEGORY.value: [9],
+            WeatherKey.AVG_TEMP.value: [12.0],
+            PipelineKey.DEMAND_LAG_14D.value: [9.0],
+            PipelineKey.TARGET_DEMAND.value: [11],
         }
     )
 
 
-def test_transform_raises_error_if_not_fitted(dummy_train_data: pd.DataFrame) -> None:
-    """Test that transform raises an error if fit_transform has not been called."""
-    processor = DataProcessor()
+def test_split_features_target_removes_target_and_date(
+    dummy_train_data: pd.DataFrame,
+) -> None:
+    processor = ModelPreprocessor()
+
+    X, y = processor.split_features_target(dummy_train_data)
+
+    assert PipelineKey.TARGET_DEMAND.value not in X.columns
+    assert DayKey.DATE.value not in X.columns
+    assert y.tolist() == [10.0, 20.0, 30.0]
+    assert y.dtype == float
+
+
+def test_split_features_target_does_not_modify_input(
+    dummy_train_data: pd.DataFrame,
+) -> None:
+    processor = ModelPreprocessor()
+    original = dummy_train_data.copy(deep=True)
+
+    processor.split_features_target(dummy_train_data)
+
+    pd.testing.assert_frame_equal(dummy_train_data, original)
+
+
+def test_fit_transform_for_xgboost_creates_categorical_columns(
+    dummy_train_data: pd.DataFrame,
+) -> None:
+    processor = ModelPreprocessor()
+
+    X, _ = processor.fit_transform_for_xgboost(dummy_train_data)
+
+    for column in processor.categorical_cols:
+        assert isinstance(X[column].dtype, CategoricalDtype)
+        assert X[column].dtype == processor.xgboost_category_dtypes[column]
+
+
+def test_trainsform_for_xgboost_requrires_fit(dummy_test_data: pd.DataFrame) -> None:
+    processor = ModelPreprocessor()
+
     with pytest.raises(
-        RuntimeError, match="Call fit_transform on the training data first"
+        RuntimeError,
+        match="Call fit_transform_for_xgboost first",
     ):
-        processor.transform(dummy_train_data)
+        processor.transform_for_xgboost(dummy_test_data)
 
 
-def test_data_processor_does_not_transform_demand_for_xgboost(
-    dummy_train_data: pd.DataFrame,
-) -> None:
-    """Test that the preprocessor does not transform demand features for XGBoost."""
-    processor = DataProcessor(scale_numeric=False)
-
-    transformed_df = processor.fit_transform(dummy_train_data)
-    yest_key = ArticleKey.YESTERDAY_DEMAND.value
-
-    expected_val = dummy_train_data[yest_key].iloc[0]
-    actual_val = transformed_df[yest_key].iloc[0]
-
-    assert np.isclose(expected_val, actual_val), "XGBoost should receive raw data!"
-
-
-def test_data_processor_transforms_demand_for_ridge(
-    dummy_train_data: pd.DataFrame,
-) -> None:
-    """
-    Test that for Ridge, demand features
-    are mathematically transformed (log1p + scaled).
-    """
-    processor = DataProcessor(scale_numeric=True)
-
-    transformed_df = processor.fit_transform(dummy_train_data)
-    yest_key = ArticleKey.YESTERDAY_DEMAND.value
-
-    raw_val = dummy_train_data[yest_key].iloc[0]
-    actual_val = transformed_df[yest_key].iloc[0]
-
-    assert not np.isclose(raw_val, actual_val), "Ridge should receive transformed data!"
-
-
-def test_fit_transform_creates_correct_columns(dummy_train_data: pd.DataFrame) -> None:
-    """Checks that the preprocessor creates the correct columns after transformation."""
-    processor = DataProcessor()
-
-    proc_df = processor.fit_transform(dummy_train_data)
-
-    assert processor.is_fitted is True
-
-    # remainder passthrough collumns should be present
-    assert ArticleKey.DEMAND.value in proc_df.columns
-    assert DayKey.DATE.value in proc_df.columns
-
-    # one-hot encoded columns should be present
-    plu_cols = [col for col in proc_df.columns if str(ArticleKey.PLU.value) in col]
-    assert len(plu_cols) == 2
-
-
-def test_transform_ignores_unknown_categories(
+def test_xgboost_transform_uses_categories_learned_from_training(
     dummy_train_data: pd.DataFrame, dummy_test_data: pd.DataFrame
 ) -> None:
-    """
-    Checks that unknown categories are ignored during transformation.
-    """
-    processor = DataProcessor()
+    processor = ModelPreprocessor()
+    processor.fit_transform_for_xgboost(dummy_train_data)
 
-    processor.fit_transform(dummy_train_data)
+    X_test, _ = processor.transform_for_xgboost(dummy_test_data)
 
-    # test data contains PLU=999, should be no errror
-    test_proc_df = processor.transform(dummy_test_data)
+    plu_col = ArticleKey.PLU.value
+    category_col = ArticleKey.CATEGORY.value
 
-    # all should be 0.0 for PLU_999 because it's an unknown category
-    plu_101_col = f"{ArticleKey.PLU.value}_101"
+    assert X_test[plu_col].isna().all()
+    assert X_test[category_col].isna().all()
+    assert X_test[plu_col].dtype == processor.xgboost_category_dtypes[plu_col]
 
-    if plu_101_col in test_proc_df.columns:
-        assert test_proc_df[plu_101_col].iloc[0] == 0.0
+
+def test_xgboost_preprocessor_scales_numeric_features(
+    dummy_train_data: pd.DataFrame,
+) -> None:
+    processor = ModelPreprocessor(scale_numeric=True)
+
+    X, _ = processor.fit_transform_for_xgboost(dummy_train_data)
+
+    avg_temp_col = WeatherKey.AVG_TEMP.value
+
+    assert np.isclose(X[avg_temp_col].mean(), 0.0)
+    assert isinstance(
+        X[ArticleKey.PLU.value].dtype,
+        CategoricalDtype,
+    )
+
+
+def test_fit_transform_for_linear_creates_numeric_features(
+    dummy_train_data: pd.DataFrame,
+) -> None:
+    processor = ModelPreprocessor()
+
+    X, y = processor.fit_transform_for_linear(dummy_train_data)
+
+    assert len(X) == len(dummy_train_data)
+    assert len(y) == len(dummy_train_data)
+    assert all(np.issubdtype(dtype, np.number) for dtype in X.dtypes)
+    assert any(column.startswith("cat_") for column in X.columns)
+
+
+def test_linear_preprocessor_imputes_missing_numeric_features(
+    dummy_train_data: pd.DataFrame,
+) -> None:
+    processor = ModelPreprocessor()
+    data_with_missing_lag = dummy_train_data.copy()
+    data_with_missing_lag.loc[0, PipelineKey.DEMAND_LAG_14D.value] = np.nan
+
+    X, _ = processor.fit_transform_for_linear(data_with_missing_lag)
+
+    assert not X.isna().any().any()
+
+
+def test_transform_for_linear_requires_fit(
+    dummy_test_data: pd.DataFrame,
+) -> None:
+    processor = ModelPreprocessor()
+
+    with pytest.raises(
+        ValueError,
+        match="Preprocessor has not been fitted yet",
+    ):
+        processor.transform_for_linear(dummy_test_data)
+
+
+def test_linear_transform_ignores_unknown_categories(
+    dummy_train_data: pd.DataFrame,
+    dummy_test_data: pd.DataFrame,
+) -> None:
+    processor = ModelPreprocessor()
+
+    X_train, _ = processor.fit_transform_for_linear(dummy_train_data)
+    X_test, _ = processor.transform_for_linear(dummy_test_data)
+
+    assert list(X_test.columns) == list(X_train.columns)
+
+    plu_prefix = f"cat__{ArticleKey.PLU.value}_"
+    plu_columns = [column for column in X_test.columns if column.startswith(plu_prefix)]
+
+    assert (X_test[plu_columns].iloc[0] == 0).all()
+
+
+def test_linear_preprocessor_scales_numeric_features(
+    dummy_train_data: pd.DataFrame,
+) -> None:
+    processor = ModelPreprocessor(scale_numeric=True)
+
+    X, _ = processor.fit_transform_for_linear(dummy_train_data)
+
+    avg_temp_col = f"num__{WeatherKey.AVG_TEMP.value}"
+
+    assert np.isclose(X[avg_temp_col].mean(), 0.0)
