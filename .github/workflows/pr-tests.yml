@@ -145,7 +145,7 @@ jobs:
       - name: Run Mypy static type checker
         run: |
           cd training
-          poetry run mypy --ignore-missing-imports .
+          poetry run mypy --ignore-missing-imports src tests
 
       - name: Execute Training Module Tests
         run: |
