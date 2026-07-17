@@ -136,20 +136,16 @@ jobs:
           cd training
           poetry install --no-interaction
 
-      # Instalujemy lintery (na wypadek gdyby ML-owcy nie mieli ich w poetry.lock)
-      - name: Install base linters
-        run: pip install black flake8 mypy
-
       - name: Run Black formatter check
-        run: black --check training/
+        run: cd training && poetry run black --check src tests
 
       - name: Run Flake8 linter
-        run: flake8 training/ --max-line-length=88
+        run: cd training && poetry run flake8 src tests
 
       - name: Run Mypy static type checker
         run: |
           cd training
-          poetry run mypy --ignore-missing-imports .
+          poetry run mypy --ignore-missing-imports src tests
 
       - name: Execute Training Module Tests
         run: |
