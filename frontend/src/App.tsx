@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "./App.css";
 import { FileUpload } from "./components/FileUpload";
+import { ProductForecast } from "./components/Productforecast";
 
 type Joke = {
     setup: string;
@@ -56,7 +57,7 @@ function App() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans py-12">
-            <div className="w-full max-w-xl flex flex-col gap-6 text-center">
+            <div className="w-full max-w-5xl flex flex-col gap-8 text-center">
                 {/* --- SEKCJA LODZIARNI --- */}
                 <span className="text-xl font-semibold text-slate-700">
                     Jaka mamy dziś pogodę?
@@ -94,11 +95,69 @@ function App() {
 
                 <Joke joke={joke} />
 
-                {/* --- SEKCJA IMPORTU PLIKU --- */}
+                <div className="w-full h-px bg-slate-200 my-2"></div>
+
+                <div className="w-full text-left">
+                    <ProductForecast
+                        plu="SKU-001"
+                        productName="Absolut Vodka"
+                        category="1L"
+                        currentForecast={125}
+                        forecastUnit="units"
+                        defaultExpanded={true}
+                        factors={[
+                            {
+                                name: "Pub Quiz Night",
+                                weight: 15,
+                                errorMargin: 5,
+                                color: "from-indigo-500 to-indigo-600",
+                            },
+                            {
+                                name: "Historical Base Demand",
+                                weight: 75,
+                                errorMargin: 0.9,
+                                color: "from-blue-400 to-blue-600",
+                            },
+                            {
+                                name: "Weekend Trend",
+                                weight: 10,
+                                errorMargin: 1.8,
+                                color: "from-amber-400 to-amber-500",
+                            },
+                        ]}
+                    />
+                    <ProductForecast
+                        plu="SKU-001"
+                        productName="Orange Juice"
+                        category="1L"
+                        currentForecast={125}
+                        forecastUnit="units"
+                        defaultExpanded={true}
+                        factors={[
+                            {
+                                name: "Pub Quiz Night",
+                                weight: 15,
+                                errorMargin: 5,
+                                color: "from-indigo-500 to-indigo-600",
+                            },
+                            {
+                                name: "Historical Base Demand",
+                                weight: 75,
+                                errorMargin: 0.9,
+                                color: "from-blue-400 to-blue-600",
+                            },
+                            {
+                                name: "Weekend Trend",
+                                weight: 10,
+                                errorMargin: 1.8,
+                                color: "from-amber-400 to-amber-500",
+                            },
+                        ]}
+                    />
+                </div>
 
                 <div className="w-full h-px bg-slate-200 my-2"></div>
 
-                {/* 2. NASZ NOWY KOMPONENT */}
                 <FileUpload />
             </div>
         </div>
