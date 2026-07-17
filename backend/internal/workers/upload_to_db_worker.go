@@ -112,7 +112,7 @@ func (w *UploadWorker) processObject(ctx context.Context, objectKey string) erro
 	return nil
 }
 
-func (w *UploadWorker) parseReport(file io.Reader) (*parser.Raport, error) {
+func (w *UploadWorker) parseReport(file io.Reader) (*parser.Report, error) {
 	p := parser.NewParser()
 	raport, err := p.Parse(file)
 	if err != nil {
@@ -125,7 +125,7 @@ func (w *UploadWorker) parseReport(file io.Reader) (*parser.Raport, error) {
 	return &raport, nil
 }
 
-func (w *UploadWorker) parseWeatherMap(ctx context.Context, raport *parser.Raport) (map[string]weather.WeatherSummary, error) {
+func (w *UploadWorker) parseWeatherMap(ctx context.Context, raport *parser.Report) (map[string]weather.WeatherSummary, error) {
 	// Find date range for weather data.
 	minDate := raport.Days[0].Date
 	maxDate := raport.Days[0].Date
@@ -153,7 +153,7 @@ func (w *UploadWorker) parseWeatherMap(ctx context.Context, raport *parser.Rapor
 	return weatherMap, nil
 }
 
-func (w *UploadWorker) doTransaction(raport *parser.Raport,
+func (w *UploadWorker) doTransaction(raport *parser.Report,
 	weatherMap map[string]weather.WeatherSummary) error {
 	// Save everything to DB
 	db := w.DBClient.GetDB()
