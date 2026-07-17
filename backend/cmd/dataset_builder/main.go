@@ -15,10 +15,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func parseData(path string) (report parser.Raport, err error) {
+func parseData(path string) (report parser.Report, err error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return parser.Raport{}, err
+		return parser.Report{}, err
 	}
 
 	defer func() {
@@ -32,7 +32,7 @@ func parseData(path string) (report parser.Raport, err error) {
 	return dataParser.Parse(file)
 }
 
-func fetchWeather(report parser.Raport) ([]weather.WeatherSummary, error) {
+func fetchWeather(report parser.Report) ([]weather.WeatherSummary, error) {
 	if len(report.Days) == 0 {
 		return nil, fmt.Errorf("empty report")
 	}
@@ -49,7 +49,7 @@ func fetchWeather(report parser.Raport) ([]weather.WeatherSummary, error) {
 
 func main() {
 	// read file path as option
-	filePath := flag.String("file", "file.txt", "Ścieżka do pliku z raportem") //usunac wartosc domyslna
+	filePath := flag.String("file", "file.txt", "Path to the report file") // delete default value
 	flag.Parse()
 
 	report, err := parseData(*filePath)
