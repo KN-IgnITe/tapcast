@@ -27,9 +27,10 @@ const predictions = [
 
 function Dashboard() {
     return (
-        <>
-            <h1 className="text-3xl font-bold m-2">dashboard</h1>
+        <div>
+            <h1 className="text-3xl font-bold m-2 mr-200">dashboard</h1>
 
+            {/* factors */}
             <div className="border-2 rounded-3xl w-fit mx-auto p-2 m-2">
                 <h1 className="font-bold">factors</h1>
                 <div className="flex flex-wrap w-fit max-w-150">
@@ -41,10 +42,11 @@ function Dashboard() {
                 </div>
             </div>
 
+            {/* prediction list */}
             <div className="px-20">
                 <div>
                     <button className="border-2 rounded-3xl m-2 p-2">
-                        fliter
+                        filter
                     </button>
                     <button className="border-2 rounded-3xl m-2 p-2">
                         sort
@@ -75,7 +77,7 @@ function Dashboard() {
                     ))}
                 </div>
             </div>
-        </>
+        </div>
     );
 }
 
