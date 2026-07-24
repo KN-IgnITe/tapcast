@@ -14,6 +14,7 @@ dependencies = [
 
 [tool.poetry]
 packages = [{include = "ml_common", from = "src"}]
+include = ["src/ml_common/py.typed"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
