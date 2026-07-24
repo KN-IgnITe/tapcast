@@ -1,7 +1,11 @@
+import os
 from pathlib import Path
 
 import numpy as np
 
+from ml_common.artifacts.s3_model_bundle_store import S3ModelBundleStore
+from ml_common.storage.s3_client import S3Client
+from ml_common.storage.s3_config import S3Config
 from training.data.data_loader import DemandDataLoader
 from training.data.data_splitter import DataSplitter
 from training.artifacts.model_bundle import (
@@ -16,6 +20,9 @@ from training.evaluation.window_evaluator import WindowEvaluator
 from training.features.history_cleaner import HistoryCleanerConfig
 from training.features.temporal_matrix_builder import TemporalMatrixBuilder
 from training.models.model_trainer import ModelTrainer, ModelType
+
+
+DEFAULT_MODEL_BUNDLE_S3_PREFIX = "demand-model/latest"
 
 
 def main() -> None:
@@ -177,13 +184,37 @@ def main() -> None:
         artifact_dir,
     )
 
+    model_bundle_s3_prefix = os.getenv(
+        "MODEL_BUNDLE_S3_PREFIX",
+        DEFAULT_MODEL_BUNDLE_S3_PREFIX,
+    )
+    _upload_production_bundle_to_s3(
+        artifact_dir=artifact_dir,
+        prefix=model_bundle_s3_prefix,
+    )
+
     print("\nProduction artifacts ready:")
     print(f"Artifact directory: {artifact_dir}")
+    print(f"S3 prefix: {model_bundle_s3_prefix}")
     print(f"Model trees: {final_tree_count}")
     print(
         "Winsorization thresholds: "
         f"{len(final_cleaner.artifacts_winsorization_threshold)}"
     )
+
+
+def _upload_production_bundle_to_s3(artifact_dir: Path, prefix: str) -> None:
+    """Upload production model bundle to S3-compatible storage."""
+
+    s3_config = S3Config()
+
+    with S3Client(s3_config) as s3_client:
+        s3_client.ensure_bucket_exists()
+
+        S3ModelBundleStore(s3_client).upload_bundle_from_dir(
+            source_dir=artifact_dir,
+            prefix=prefix,
+        )
 
 
 if __name__ == "__main__":
