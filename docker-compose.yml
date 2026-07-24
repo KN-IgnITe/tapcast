@@ -48,6 +48,7 @@ services:
     env_file: .env
     environment:
       - RABBITMQ_HOST=rabbitmq
+      - S3_HOST=s3
 
   training:
     build:
