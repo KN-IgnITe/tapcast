@@ -1,10 +1,22 @@
 import logging
-from concurrent import futures
 import os
+from concurrent import futures
+from pathlib import Path
 
 import grpc
 
+from inference.artifacts.model_bundle_loader import download_model_bundle_from_s3
 from inference.pb.ping.v1 import ping_pb2, ping_pb2_grpc
+
+MODEL_BUNDLE_DIR = Path("artifacts/production")
+
+
+def prepare_model_bundle() -> Path:
+    """Download model bundle before starting inference service."""
+
+    download_model_bundle_from_s3(MODEL_BUNDLE_DIR)
+
+    return MODEL_BUNDLE_DIR
 
 
 class PingServiceServicer(ping_pb2_grpc.PingServiceServicer):
@@ -32,4 +44,5 @@ def serve() -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    prepare_model_bundle()
     serve()
