@@ -21,7 +21,6 @@ from training.features.history_cleaner import HistoryCleanerConfig
 from training.features.temporal_matrix_builder import TemporalMatrixBuilder
 from training.models.model_trainer import ModelTrainer, ModelType
 
-
 DEFAULT_MODEL_BUNDLE_S3_PREFIX = "demand-model/latest"
 
 
