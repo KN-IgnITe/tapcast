@@ -19,22 +19,23 @@ export default function Shell() {
 
     return (
         <>
-            <div className="flex min-h-screen bg-gray-50">
+            <div className="flex min-h-screen bg-gray-100">
                 <aside
-                    className={`bg-white border-r border-gray-200 flex flex-col justify-between transition-all duration-300 ease-in-out ${isOpen ? "w-64" : "w-18"}`}
+                    className={`bg-gray-50 border-r border-gray-200 flex flex-col justify-between transition-all duration-300 ease-in-out ${isOpen ? "w-64" : "w-18"}`}
                 >
                     <div>
                         {/* header */}
-                        <div className="flex mx-3 items-center justify-between h-16 border-b border-gray-100">
+                        <div className="flex mt-1 p-3 items-center justify-between h-16 border-b border-gray-100">
                             <div
-                                className={`flex mx-2 gap-2 font-semibold text-lg transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 hidden"}`}
+                                className={`flex font-semibold text-lg transition-all duration-300 whitespace-nowrap overflow-hidden ${isOpen ? "opacity-100 max-w-xs mx-2" : "opacity-0 max-w-0 mx-0"}`}
                             >
                                 <span>TapCast</span>
                             </div>
 
+                            {/* chevron */}
                             <button
                                 onClick={() => setIsOpen(!isOpen)}
-                                className="p-3 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 dynamic-toggle"
+                                className={`flex items-center justify-center h-12 rounded-xl hover:bg-gray-200 transition-colors text-gray-600 w-12 cursor-pointer`}
                             >
                                 {isOpen ? (
                                     <ChevronLeft size={20} />
@@ -50,16 +51,21 @@ export default function Shell() {
                                 <a
                                     key={index}
                                     href="#"
-                                    className="flex items-center p-3 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors group relative"
+                                    className="flex items-center p-3 rounded-xl text-gray-600 hover:bg-gray-200 transition-colors group relative"
                                 >
-                                    <div className="shrink-0">{item.icon}</div>
+                                    {/* icon */}
+                                    <div className="flex items-center justify-center shrink-0 border-2 border-transparent">
+                                        {item.icon}
+                                    </div>
 
+                                    {/* label */}
                                     <span
-                                        className={`ml-3 transition-all duration-300 whitespace-nowrap ${isOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
+                                        className={`flex transition-all duration-300 whitespace-nowrap overflow-hidden ${isOpen ? "opacity-100 max-w-xs mx-2" : "opacity-0 max-w-0 mx-0"}`}
                                     >
                                         {item.label}
                                     </span>
 
+                                    {/* hover label */}
                                     {isOpen || (
                                         <div className="absolute left-full ml-4 rounded-md px-2 py-1 bg-gray-900 text-white text-xs invisible opacity-0 -translate-x-2 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0 z-50 whitespace-nowrap">
                                             {item.label}
@@ -70,6 +76,8 @@ export default function Shell() {
                         </nav>
                     </div>
                 </aside>
+
+                {/* content */}
                 <Dashboard></Dashboard>
             </div>
         </>
