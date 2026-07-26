@@ -8,8 +8,10 @@ type Day struct {
 	DayDate   time.Time `gorm:"primaryKey;type:date"`
 	IsWorking bool      `gorm:"not null"`
 
-	Weather []Weather `gorm:"foreignKey:WeatherDate;references:DayDate"`
-	Sales   []Sale    `gorm:"foreignKey:SaleDate;references:DayDate"`
+	Weather         []Weather         `gorm:"foreignKey:WeatherDate;references:DayDate"`
+	WeatherForecast []WeatherForecast `gorm:"foreignKey:WeatherDate;references:DayDate"`
+
+	Sales []Sale `gorm:"foreignKey:SaleDate;references:DayDate"`
 }
 
 func (Day) TableName() string { return "day" }
@@ -18,8 +20,9 @@ type Location struct {
 	LocationID int    `gorm:"primaryKey"`
 	Name       string `gorm:"type:text;not null"`
 
-	Weather []Weather `gorm:"foreignKey:LocationID;references:LocationID"`
-	Bar     []Bar     `gorm:"foreignKey:LocationID;references:LocationID"`
+	Weather         []Weather         `gorm:"foreignKey:LocationID;references:LocationID"`
+	WeatherForecast []WeatherForecast `gorm:"foreignKey:LocationID;references:LocationID"`
+	Bar             []Bar             `gorm:"foreignKey:LocationID;references:LocationID"`
 }
 
 func (Location) TableName() string { return "location" }
@@ -40,12 +43,20 @@ type Weather struct {
 	AvgTemp       float64   `gorm:"not null"`
 	TempAmplitude float64   `gorm:"not null"`
 	Rain          float64   `gorm:"not null;default:0;check:rain>=0"`
-
-	//Day Day `gorm:"foreignKey:WeatherDate;references:DayDate"`
-	//Location Location `gorm:"foreignKey:LocationID;references:LocationID"`
 }
 
 func (Weather) TableName() string { return "weather" }
+
+type WeatherForecast struct {
+	WeatherDate   time.Time `gorm:"primaryKey;type:date"`
+	LocationID    int       `gorm:"primaryKey"`
+	AvgTemp       float64   `gorm:"not null"`
+	TempAmplitude float64   `gorm:"not null"`
+	Rain          float64   `gorm:"not null;default:0;check:rain>=0"`
+	ForecastDate  time.Time `gorm:"not null;type:date"`
+}
+
+func (WeatherForecast) TableName() string { return "weather_forecast" }
 
 type Article struct {
 	BarID    int    `gorm:"primaryKey"`
