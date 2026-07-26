@@ -70,8 +70,8 @@ func createExampleData(ctx context.Context, dbClient *DBClient) error {
 	}
 
 	articles := []models.Article{
-		{BarID: 1, Plu: 101, Category: 5},
-		{BarID: 1, Plu: 102, Category: 6},
+		{BarID: 1, Plu: 101, Category: "5"},
+		{BarID: 1, Plu: 102, Category: "6"},
 	}
 
 	if err := dbClient.Create(ctx, articles); err != nil {
