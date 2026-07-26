@@ -29,7 +29,7 @@ func TestSchedulerRunJob(t *testing.T) {
 
 	scheduler.AddJob(job, "@every 1s")
 
-	scheduler.Start()
+	require.NoError(t, scheduler.Start())
 	defer scheduler.Stop()
 
 	require.Eventually(t, func() bool {

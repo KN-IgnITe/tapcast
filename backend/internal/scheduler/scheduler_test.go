@@ -56,7 +56,7 @@ func TestStartStopLifecycle(t *testing.T) {
 		Return(cron.EntryID(2), nil)
 
 	cronMock.EXPECT().Start()
-	scheduler.Start()
+	require.NoError(t, scheduler.Start())
 
 	cronMock.EXPECT().Stop().Return(context.Background())
 
