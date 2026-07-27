@@ -2,12 +2,10 @@ from typing import cast
 
 import numpy as np
 import pandas as pd
-from typing import cast
-
 import pytest
-from training.evaluation.metrics import RegressionMetrics
 from training.data.columns import PipelineKey
 from training.data.mock_data_generator import ArticleKey
+from training.evaluation.metrics import RegressionMetrics
 
 
 @pytest.fixture
