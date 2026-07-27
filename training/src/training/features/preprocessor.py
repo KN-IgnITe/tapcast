@@ -94,10 +94,8 @@ class ModelPreprocessor:
             category_dtype = self.xgboost_category_dtypes[col]
             known_categories = category_dtype.categories
 
-            X[col] = X[col].where(
-                X[col].isin(known_categories),
-                pd.NA,
-            )
+            known_category_mask = X[col].isin(known_categories)
+            X[col] = X[col].mask(~known_category_mask)
             X[col] = X[col].astype(category_dtype)
 
         if self.scale_numeric:
