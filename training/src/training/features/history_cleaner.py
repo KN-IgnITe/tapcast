@@ -229,7 +229,7 @@ class HistoryCleaner:
         )
 
         self.artifacts_winsorization_threshold = cast(
-            Dict[int, float],
+            dict[int, float],
             winsorization_thresholds.to_dict(),
         )
         threshold_series = (
