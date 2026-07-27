@@ -224,14 +224,6 @@ class HistoryCleaner:
         clean_dem_col = PipelineKey.DEMAND_CLEANED.value
         winsorized_col = PipelineKey.WAS_WINSORIZED.value
 
-        winsorization_thresholds = df.groupby(plu_col)[clean_dem_col].quantile(
-            self.winsorized_quantile
-        )
-
-        self.artifacts_winsorization_threshold = cast(
-            dict[int, float],
-            winsorization_thresholds.to_dict(),
-        )
         threshold_series = (
             df[plu_col].map(self.artifacts_winsorization_threshold).fillna(np.inf)
         )
