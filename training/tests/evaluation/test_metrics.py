@@ -1,3 +1,5 @@
+from typing import cast
+
 import numpy as np
 import pandas as pd
 
@@ -60,8 +62,8 @@ def test_calculate_for_group_value_returns_metrics_for_single_plu(
     assert result["support"] == 2
     assert result["actual_sum"] == 30
     assert result["prediction_sum"] == 30
-    assert np.isclose(result["MAE"], 2.0)
-    assert np.isclose(result["WAPE"], 4 / 30)
+    assert np.isclose(cast(float, result["MAE"]), 2.0)
+    assert np.isclose(cast(float, result["WAPE"]), 4 / 30)
 
 
 def test_calculate_for_group_value_for_returns_metrics_for_single_category(
@@ -79,8 +81,8 @@ def test_calculate_for_group_value_for_returns_metrics_for_single_category(
     assert result["support"] == 2
     assert result["actual_sum"] == 20
     assert result["prediction_sum"] == 20
-    assert np.isclose(result["MAE"], 1.0)
-    assert np.isclose(result["WAPE"], 2 / 20)
+    assert np.isclose(cast(float, result["MAE"]), 1.0)
+    assert np.isclose(cast(float, result["WAPE"]), 2 / 20)
 
 
 def test_calculate_grouped_returns_one_row_per_plu(
