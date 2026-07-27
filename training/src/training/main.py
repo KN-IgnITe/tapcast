@@ -205,7 +205,7 @@ def main() -> None:
 def _upload_production_bundle_to_s3(artifact_dir: Path, prefix: str) -> None:
     """Upload production model bundle to S3-compatible storage."""
 
-    s3_config = S3Config()
+    s3_config = S3Config()  # type: ignore[call-arg]
 
     with S3Client(s3_config) as s3_client:
         s3_client.ensure_bucket_exists()
