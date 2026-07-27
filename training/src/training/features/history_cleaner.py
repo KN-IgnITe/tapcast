@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, cast
 import numpy as np
 import pandas as pd
 
@@ -77,8 +77,14 @@ class HistoryCleaner:
 
         plu_medians = sales_only.groupby(plu_col)[clean_dem_col].median()
 
-        self.artifacts_plu_dow_median = plu_dow_medians.to_dict()
-        self.artifacts_plu_median = plu_medians.to_dict()
+        self.artifacts_plu_dow_median = cast(
+            Dict[Tuple[int, int], float],
+            plu_dow_medians.to_dict(),
+        )
+        self.artifacts_plu_median = cast(
+            Dict[int, float],
+            plu_medians.to_dict(),
+        )
 
         plu_history_medians = df.groupby(plu_col)[clean_dem_col].median()
 
@@ -119,8 +125,10 @@ class HistoryCleaner:
             self.winsorized_quantile
         )
 
-        self.artifacts_winsorization_threshold = winsorization_thresholds.to_dict()
-
+        self.artifacts_winsorization_threshold = cast(
+            Dict[int, float],
+            winsorization_thresholds.to_dict(),
+        )
         threshold_series = (
             df[plu_col].map(self.artifacts_winsorization_threshold).fillna(np.inf)
         )
