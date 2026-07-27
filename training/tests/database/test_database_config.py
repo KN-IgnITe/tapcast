@@ -10,7 +10,7 @@ def test_database_config_uses_env_values(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setenv("POSTGRES_USER", "tapcast_user")
     monkeypatch.setenv("POSTGRES_PASSWORD", "secret")
 
-    cfg = DatabaseConfig()
+    cfg = DatabaseConfig()  # type: ignore[call-arg]
 
     assert cfg.host == "db.internal"
     assert cfg.port == 6543
@@ -27,7 +27,7 @@ def test_database_config_raises_error_when_required_env_missing(
     monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
 
     with pytest.raises(ValidationError):
-        DatabaseConfig()
+        DatabaseConfig()  # type: ignore[call-arg]
 
 
 def test_database_config_uses_defaults_for_optional_fields(
@@ -40,7 +40,7 @@ def test_database_config_uses_defaults_for_optional_fields(
     monkeypatch.setenv("POSTGRES_USER", "user")
     monkeypatch.setenv("POSTGRES_PASSWORD", "pass")
 
-    cfg = DatabaseConfig()
+    cfg = DatabaseConfig()  # type: ignore[call-arg]
 
     assert cfg.host == "localhost"
     assert cfg.port == 5432
