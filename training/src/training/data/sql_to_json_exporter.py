@@ -195,7 +195,7 @@ class SQLToJSONExporter:
 
 
 def export_from_database(bar_id: int = 1) -> dict[str, Any]:
-    config = DatabaseConfig()
+    config = DatabaseConfig()  # type: ignore[call-arg]
     paths = ExporterPaths.resolve_defaults()
 
     with DatabaseClient(config) as client:

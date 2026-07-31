@@ -10,7 +10,7 @@ from training.database.database_config import DatabaseConfig
 def db_config() -> DatabaseConfig:
     return DatabaseConfig(
         host="localhost",
-        port="5432",
+        port=5432,
         db_name="tapcast",
         user="postgres",
         password="pwd",
