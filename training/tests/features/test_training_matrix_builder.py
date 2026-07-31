@@ -137,6 +137,7 @@ def test_training_matrix_builder_creates_expected_output_columns(
     ]
 
     assert list(matrix.columns) == expected_columns
+    assert all(type(column) is str for column in matrix.columns)
     assert PipelineKey.DEMAND_RAW.value not in matrix.columns
     assert PipelineKey.DEMAND_CLEANED.value not in matrix.columns
 
@@ -284,3 +285,21 @@ def test_training_matrix_builder_smart_lag_respects_max_backwards_limit(
     wider_row = wider_matrix.iloc[0]
 
     assert wider_row[PipelineKey.DEMAND_LAST_SIMILAR_DAY.value] == 6
+
+
+def test_training_matrix_builder_uses_raw_demand_as_target(
+    cleaned_history_data: pd.DataFrame,
+) -> None:
+    history = cleaned_history_data.copy()
+
+    mask = (history[DayKey.DATE.value] == "2026-01-22") & (
+        history[ArticleKey.PLU.value] == 101
+    )
+
+    history.loc[mask, PipelineKey.DEMAND_RAW.value] = 100
+    history.loc[mask, PipelineKey.DEMAND_CLEANED.value] = 70
+
+    matrix = TrainingMatrixBuilder().build(history)
+    row = _single_matrix_row(matrix, "2026-01-22", 101)
+
+    assert row[PipelineKey.TARGET_DEMAND.value] == 100

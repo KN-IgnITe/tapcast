@@ -21,7 +21,7 @@ class DemandDataLoader:
         raw_data = self._read_json()
         df = self._flatten_data(raw_data)
 
-        df[DayKey.DATE] = pd.to_datetime(df[DayKey.DATE])
+        df[DayKey.DATE.value] = pd.to_datetime(df[DayKey.DATE.value])
 
         return df
 
@@ -71,18 +71,22 @@ class DemandDataLoader:
     def _extract_day_features(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Extract features related to the day (date, day of week, working day)"""
 
-        weather_features = self._extract_weather_features(data.get(DayKey.WEATHER, {}))
+        weather_features = self._extract_weather_features(
+            data.get(DayKey.WEATHER.value, {})
+        )
 
         features: Dict[str, Any] = {
-            DayKey.DATE: str(data.get(DayKey.DATE)),
-            DayKey.DAY_OF_WEEK: int(
+            DayKey.DATE.value: str(data.get(DayKey.DATE.value)),
+            DayKey.DAY_OF_WEEK.value: int(
                 data.get(
-                    DayKey.DAY_OF_WEEK,
-                    pd.Timestamp(data[DayKey.DATE]).dayofweek + 1,
+                    DayKey.DAY_OF_WEEK.value,
+                    pd.Timestamp(data[DayKey.DATE.value]).dayofweek + 1,
                 )
             ),
-            DayKey.IS_WORKING: int(data.get(DayKey.IS_WORKING, 0)),
-            DayKey.IS_NEXT_DAY_WORKING: int(data.get(DayKey.IS_NEXT_DAY_WORKING, 0)),
+            DayKey.IS_WORKING.value: int(data.get(DayKey.IS_WORKING.value, 0)),
+            DayKey.IS_NEXT_DAY_WORKING.value: int(
+                data.get(DayKey.IS_NEXT_DAY_WORKING.value, 0)
+            ),
         }
 
         features.update(weather_features)
@@ -90,22 +94,28 @@ class DemandDataLoader:
 
     def _extract_weather_features(self, weather: Dict[str, Any]) -> Dict[str, float]:
         return {
-            WeatherKey.AVG_TEMP: float(weather.get(WeatherKey.AVG_TEMP, 0.0)),
-            WeatherKey.TEMP_AMPLITUDE: float(
-                weather.get(WeatherKey.TEMP_AMPLITUDE, 0.0)
+            WeatherKey.AVG_TEMP.value: float(
+                weather.get(WeatherKey.AVG_TEMP.value, 0.0)
             ),
-            WeatherKey.RAIN: float(weather.get(WeatherKey.RAIN, 0.0)),
+            WeatherKey.TEMP_AMPLITUDE.value: float(
+                weather.get(WeatherKey.TEMP_AMPLITUDE.value, 0.0)
+            ),
+            WeatherKey.RAIN.value: float(weather.get(WeatherKey.RAIN.value, 0.0)),
         }
 
     def _extract_article_features(
         self, article: Dict[str, int | float]
     ) -> Dict[str, Any]:
         return {
-            ArticleKey.PLU: article.get(ArticleKey.PLU),
-            ArticleKey.CATEGORY: article.get(ArticleKey.CATEGORY),
-            ArticleKey.YESTERDAY_DEMAND: article.get(ArticleKey.YESTERDAY_DEMAND),
-            ArticleKey.WEEK_AGO_DEMAND: article.get(ArticleKey.WEEK_AGO_DEMAND),
-            ArticleKey.DEMAND: article.get(ArticleKey.DEMAND),
+            ArticleKey.PLU.value: article.get(ArticleKey.PLU.value),
+            ArticleKey.CATEGORY.value: article.get(ArticleKey.CATEGORY.value),
+            ArticleKey.YESTERDAY_DEMAND.value: article.get(
+                ArticleKey.YESTERDAY_DEMAND.value
+            ),
+            ArticleKey.WEEK_AGO_DEMAND.value: article.get(
+                ArticleKey.WEEK_AGO_DEMAND.value
+            ),
+            ArticleKey.DEMAND.value: article.get(ArticleKey.DEMAND.value),
         }
 
 

@@ -1,121 +1,160 @@
-import numpy as np
 import pandas as pd
+from pandas.api.types import CategoricalDtype
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from training.data.mock_data_generator import ArticleKey, DayKey, WeatherKey
+from training.data.columns import PipelineKey
+from training.data.mock_data_generator import ArticleKey, DayKey
 
 
-class DataProcessor:
+class ModelPreprocessor:
     """
-    DataProcessor is responsible for:
-    preprocessing(scaling, encoding) the data before it is fed into the model.
+    Prepare training_matrix for linear and xgboost models.
     """
 
-    scale_numeric: bool
-    demand_features: list[str]
-    weather_features: list[str]
-    categorical_features: list[str]
-    preprocessor: ColumnTransformer
-    is_fitted: bool
+    target_col = PipelineKey.TARGET_DEMAND.value
+    date_col = DayKey.DATE.value
+    categorical_cols = [
+        ArticleKey.PLU.value,
+        ArticleKey.CATEGORY.value,
+    ]
+
+    linear_preprocessor: ColumnTransformer | None
+    xgboost_category_dtypes: dict[str, CategoricalDtype]
 
     def __init__(self, scale_numeric: bool = False) -> None:
 
-        self.scale_numeric = scale_numeric
+        self.scale_numeric: bool = scale_numeric
 
-        self.demand_features = [
-            ArticleKey.YESTERDAY_DEMAND.value,
-            ArticleKey.WEEK_AGO_DEMAND.value,
+        self.linear_preprocessor: ColumnTransformer | None = None
+
+        self.xgboost_category_dtypes: dict[str, CategoricalDtype] = {}
+
+        self.xgboost_numeric_scaler: StandardScaler | None = None
+        self.xgboost_numeric_cols: list[str] = []
+
+    def split_features_target(
+        self,
+        df: pd.DataFrame,
+    ) -> tuple[pd.DataFrame, pd.Series]:
+        """Split training matrix into features and target."""
+
+        data = df.copy()
+
+        y = data[self.target_col].astype(float)
+        X = data.drop(columns=[self.target_col, self.date_col])
+
+        return X, y
+
+    def fit_transform_for_xgboost(
+        self, df: pd.DataFrame
+    ) -> tuple[pd.DataFrame, pd.Series]:
+        """Fit preprocessing and transform features for XGBoost model."""
+
+        X, y = self.split_features_target(df)
+
+        self.xgboost_category_dtypes = {}
+
+        for col in self.categorical_cols:
+            category_dtype = CategoricalDtype(
+                categories=sorted(X[col].dropna().unique())
+            )
+
+            self.xgboost_category_dtypes[col] = category_dtype
+            X[col] = X[col].astype(category_dtype)
+
+        self.xgboost_numeric_cols = [
+            col for col in X.columns if col not in self.categorical_cols
         ]
 
-        self.weather_features = [
-            WeatherKey.AVG_TEMP.value,
-            WeatherKey.TEMP_AMPLITUDE.value,
-            WeatherKey.RAIN.value,
-        ]
+        self.xgboost_numeric_scaler = None
 
-        self.categorical_features = [
-            DayKey.DAY_OF_WEEK.value,
-            ArticleKey.CATEGORY.value,
-            ArticleKey.PLU.value,
+        if self.scale_numeric:
+            self.xgboost_numeric_scaler = StandardScaler()
+
+            scaled_values = self.xgboost_numeric_scaler.fit_transform(
+                X[self.xgboost_numeric_cols]
+            )
+
+            X[self.xgboost_numeric_cols] = scaled_values
+
+        return X, y
+
+    def transform_for_xgboost(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+        """Transform features for XGBoost using fitted category dtypes"""
+
+        if not self.xgboost_category_dtypes:
+            raise RuntimeError("Call fit_transform_for_xgboost first.")
+
+        X, y = self.split_features_target(df)
+
+        for col in self.categorical_cols:
+            category_dtype = self.xgboost_category_dtypes[col]
+            known_categories = category_dtype.categories
+
+            known_category_mask = X[col].isin(known_categories)
+            X[col] = X[col].mask(~known_category_mask)
+            X[col] = X[col].astype(category_dtype)
+
+        if self.scale_numeric:
+            if self.xgboost_numeric_scaler is None:
+                raise RuntimeError("XGBoost numeric sclaer has not been fitted.")
+
+            X[self.xgboost_numeric_cols] = self.xgboost_numeric_scaler.transform(
+                X[self.xgboost_numeric_cols]
+            )
+
+        return X, y
+
+    def fit_transform_for_linear(
+        self, df: pd.DataFrame
+    ) -> tuple[pd.DataFrame, pd.Series]:
+        """Fit preprocessing and transform features for Ridge/Linear models."""
+
+        X, y = self.split_features_target(df)
+
+        numeric_cols = [col for col in X.columns if col not in self.categorical_cols]
+
+        numeric_steps: list[tuple[str, object]] = [
+            (
+                "imputer",
+                SimpleImputer(strategy="median", keep_empty_features=True),
+            )
         ]
 
         if self.scale_numeric:
-            demand_transformer = Pipeline(
-                steps=[
-                    ("log1p", FunctionTransformer(np.log1p, validate=False)),
-                    ("scaler", StandardScaler()),
-                ]
-            )
+            numeric_steps.append(("scaler", StandardScaler()))
 
-            weather_transformer = StandardScaler()
+        numeric_transformer = Pipeline(numeric_steps)
 
-        else:
-            demand_transformer = "passthrough"
-            weather_transformer = "passthrough"
-
-        self.preprocessor = ColumnTransformer(
+        self.linear_preprocessor = ColumnTransformer(
             transformers=[
-                ("demand_num", demand_transformer, self.demand_features),
-                ("weather_num", weather_transformer, self.weather_features),
+                ("num", numeric_transformer, numeric_cols),
                 (
                     "cat",
                     OneHotEncoder(handle_unknown="ignore", sparse_output=False),
-                    self.categorical_features,
+                    self.categorical_cols,
                 ),
             ],
-            remainder="passthrough",
+            remainder="drop",
         )
 
-        self.is_fitted = False
+        transformed = self.linear_preprocessor.fit_transform(X)
+        feature_names = self.linear_preprocessor.get_feature_names_out()
 
-    def fit_transform(self, train_df: pd.DataFrame) -> pd.DataFrame:
-        """Transform the training data using the defined preprocessor"""
+        return pd.DataFrame(transformed, columns=feature_names, index=X.index), y
 
-        # Hard rest and conversion of columns to string from Enum
-        train_df = train_df.copy()
-        train_df.columns = [getattr(c, "value", str(c)) for c in train_df.columns]
+    def transform_for_linear(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+        """Transform features for Ridge/Linear models using fitted preprocessor."""
 
-        transformed_array = self.preprocessor.fit_transform(train_df)
-        self.is_fitted = True
+        if self.linear_preprocessor is None:
+            raise ValueError("Preprocessor has not been fitted yet.")
 
-        columns = self._get_feature_names()
+        X, y = self.split_features_target(df)
 
-        return pd.DataFrame(transformed_array, columns=columns, index=train_df.index)
+        transformed = self.linear_preprocessor.transform(X)
+        feature_names = self.linear_preprocessor.get_feature_names_out()
 
-    def transform(self, test_df: pd.DataFrame) -> pd.DataFrame:
-        """Transform the test data using the fitted preprocessor"""
-        if not self.is_fitted:
-            raise RuntimeError("Call fit_transform on the training data first")
-
-        # Hard rest and conversion of columns to string from Enum
-        test_df = test_df.copy()
-        test_df.columns = [getattr(c, "value", str(c)) for c in test_df.columns]
-
-        transformed_array = self.preprocessor.transform(test_df)
-
-        columns = self._get_feature_names()
-
-        return pd.DataFrame(transformed_array, columns=columns, index=test_df.index)
-
-    def _get_feature_names(self) -> list[str]:
-        """Get the feature names after transformation"""
-        numerical_cols = self.demand_features + self.weather_features
-        cat_transformer = self.preprocessor.named_transformers_["cat"]
-
-        categorical_cols = cat_transformer.get_feature_names_out(
-            self.categorical_features
-        ).tolist()
-
-        all_original_cols = self.preprocessor.feature_names_in_
-
-        remainder_cols = [
-            col
-            for col in all_original_cols
-            if col not in self.categorical_features
-            and col not in self.demand_features
-            and col not in self.weather_features
-        ]
-
-        return numerical_cols + categorical_cols + remainder_cols
+        return pd.DataFrame(transformed, columns=feature_names, index=X.index), y

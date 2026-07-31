@@ -25,93 +25,114 @@ Returned columns:
 
 DIALECT: PostgreSQL
 */
-WITH bounds AS (
+WITH open_dates AS (
     SELECT
-        MIN(sale_date) AS min_date,
-        MAX(sale_date) AS max_date
+        sale_date AS date
     FROM sale
     WHERE bar_id = $1
+    GROUP BY sale_date
+    HAVING SUM(amount) > 0
 ),
-dates AS (
-    SELECT gs::date AS date
-    FROM bounds,
-         generate_series(bounds.min_date, bounds.max_date, interval '1 day') AS gs
-),
-products AS (
+
+product_activity AS (
     SELECT
-        bar_id,
-        plu,
-        category
-    FROM article
-    WHERE bar_id = $1
+        a.bar_id,
+        a.plu,
+        a.category,
+        MIN(s.sale_date) AS active_from,
+        MAX(s.sale_date) AS active_to
+    FROM article a
+    JOIN sale s
+        ON s.bar_id = a.bar_id
+       AND s.plu = a.plu
+    WHERE a.bar_id = $1
+    GROUP BY
+        a.bar_id,
+        a.plu,
+        a.category
 ),
-grid AS (
+
+product_day_grid AS (
     SELECT
-        d.date,
-        p.bar_id,
-        p.plu,
-        p.category
-    FROM dates d
-    CROSS JOIN products p
+        od.date,
+        pa.bar_id,
+        pa.plu,
+        pa.category
+    FROM open_dates od
+    JOIN product_activity pa
+        ON od.date BETWEEN pa.active_from AND pa.active_to
 ),
-filled AS (
+
+filled_sales AS (
     SELECT
-        g.date,
-        g.bar_id,
-        g.plu,
-        g.category,
+        grid.date,
+        grid.bar_id,
+        grid.plu,
+        grid.category,
         COALESCE(s.amount, 0) AS amount
-    FROM grid g
+    FROM product_day_grid grid
     LEFT JOIN sale s
-        ON s.sale_date = g.date
-       AND s.bar_id = g.bar_id
-       AND s.plu = g.plu
+        ON s.sale_date = grid.date
+       AND s.bar_id = grid.bar_id
+       AND s.plu = grid.plu
 )
+
 SELECT
-    f.date,
-    EXTRACT(ISODOW FROM f.date)::int AS day_of_week,
+    current_sale.date,
+
+    EXTRACT(
+        ISODOW FROM current_sale.date
+    )::int AS day_of_week,
 
     COALESCE(
-        d.is_working,
-        EXTRACT(ISODOW FROM f.date)::int BETWEEN 1 AND 5
+        calendar_day.is_working,
+        EXTRACT(ISODOW FROM current_sale.date)::int BETWEEN 1 AND 5
     ) AS is_working,
 
     COALESCE(
-        d_next.is_working,
-        EXTRACT(ISODOW FROM f.date + interval '1 day')::int BETWEEN 1 AND 5
+        next_calendar_day.is_working,
+        EXTRACT(
+            ISODOW FROM current_sale.date + INTERVAL '1 day'
+        )::int BETWEEN 1 AND 5
     ) AS is_next_day_working,
 
-    COALESCE(w.avg_temp, 0) AS avg_temp,
-    COALESCE(w.temp_amplitude, 0) AS temp_amplitude,
-    COALESCE(w.rain, 0) AS rain,
+    COALESCE(weather.avg_temp, 0) AS avg_temp,
+    COALESCE(weather.temp_amplitude, 0) AS temp_amplitude,
+    COALESCE(weather.rain, 0) AS rain,
 
-    f.plu AS PLU,
-    f.category,
-    f.amount,
+    current_sale.plu AS PLU,
+    current_sale.category,
+    current_sale.amount,
 
-    LAG(f.amount, 1, 0) OVER (
-        PARTITION BY f.plu
-        ORDER BY f.date
-    ) AS yesterday_demand,
+    COALESCE(yesterday_sale.amount, 0) AS yesterday_demand,
+    COALESCE(week_ago_sale.amount, 0) AS week_ago_demand
 
-    LAG(f.amount, 7, 0) OVER (
-        PARTITION BY f.plu
-        ORDER BY f.date
-    ) AS week_ago_demand
+FROM filled_sales current_sale
 
-FROM filled f
+LEFT JOIN filled_sales yesterday_sale
+    ON yesterday_sale.bar_id = current_sale.bar_id
+   AND yesterday_sale.plu = current_sale.plu
+   AND yesterday_sale.date = current_sale.date - INTERVAL '1 day'
 
-LEFT JOIN day d
-    ON d.day_date = f.date
+LEFT JOIN filled_sales week_ago_sale
+    ON week_ago_sale.bar_id = current_sale.bar_id
+   AND week_ago_sale.plu = current_sale.plu
+   AND week_ago_sale.date = current_sale.date - INTERVAL '7 days'
 
-LEFT JOIN day d_next
-    ON d_next.day_date = (f.date + interval '1 day')::date
+LEFT JOIN day calendar_day
+    ON calendar_day.day_date = current_sale.date
 
-LEFT JOIN bar b
-    ON b.bar_id = f.bar_id
+LEFT JOIN day next_calendar_day
+    ON next_calendar_day.day_date =
+        (current_sale.date + INTERVAL '1 day')::date
 
-LEFT JOIN weather w
-    ON w.weather_date = f.date
-   AND w.location_id = b.location_id
+LEFT JOIN bar
+    ON bar.bar_id = current_sale.bar_id
 
-ORDER BY f.date ASC, f.plu ASC;
+LEFT JOIN weather
+    ON weather.weather_date = current_sale.date
+   AND weather.location_id = bar.location_id
+
+ORDER BY
+    current_sale.date ASC,
+    current_sale.plu ASC;

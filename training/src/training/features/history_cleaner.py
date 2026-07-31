@@ -1,9 +1,30 @@
-from typing import Dict, Tuple, cast
+from dataclasses import dataclass
+from typing import cast
+
 import numpy as np
 import pandas as pd
 
 from training.data.columns import PipelineKey
 from training.data.mock_data_generator import ArticleKey, DayKey, WeatherKey
+
+
+@dataclass(frozen=True)
+class HistoryCleanerConfig:
+    """Configuration of historical demand cleaning."""
+
+    winsorized_quantile: float = 0.95
+    min_winsorization_observations: int = 20
+    enable_winsorization: bool = True
+    enable_oos_imputation: bool = False
+
+    def __post_init__(self) -> None:
+        if not 0.0 < self.winsorized_quantile <= 1.0:
+            raise ValueError(
+                "winsorized_quantile must be greater than 0 and at most 1."
+            )
+
+        if self.min_winsorization_observations < 1:
+            raise ValueError("min_winsorization_observations must be at least 1.")
 
 
 class HistoryCleaner:
@@ -15,37 +36,81 @@ class HistoryCleaner:
     4. Generating flags was_imputed and was_winsorized
     """
 
-    winsorized_quantile: float
+    config: HistoryCleanerConfig
+    artifacts_plu_dow_median: dict[tuple[int, int], float]
+    artifacts_plu_median: dict[int, float]
+    artifacts_popular_plu: dict[int, bool]
+    artifacts_winsorization_threshold: dict[int, float]
 
-    artifacts_plu_dow_median: Dict[Tuple[int, int], float]
-    artifacts_plu_median: Dict[int, float]
-    artifacts_winsorization_threshold: Dict[int, float]
+    def __init__(
+        self,
+        config: HistoryCleanerConfig | None = None,
+    ) -> None:
+        self.config = config or HistoryCleanerConfig()
 
-    def __init__(self, winsorized_quantile: float = 0.95) -> None:
-        self.winsorized_quantile = winsorized_quantile
         self.artifacts_plu_dow_median = {}
         self.artifacts_plu_median = {}
+        self.artifacts_popular_plu = {}
         self.artifacts_winsorization_threshold = {}
+        self.is_fitted = False
 
     def clean(self, raw_df: pd.DataFrame) -> pd.DataFrame:
+        """Fit cleaning artifacts and transform the same history."""
+
+        return self.fit_transform(raw_df)
+
+    def fit(self, raw_df: pd.DataFrame) -> "HistoryCleaner":
+        """Learn cleaning artifacts from historical training data."""
+
         df = raw_df.copy()
 
         df = self._prepare_base_columns(df)
-
         df = self._add_total_demand(df)
 
-        df = self._impute_out_of_stock(df)
+        if self.config.enable_oos_imputation:
+            self._fit_imputation_artifacts(df)
+            df = self._apply_imputation(df)
 
-        df = self._winsorize_demand(df)
+        if self.config.enable_winsorization:
+            self._fit_winsorization_artifacts(df)
+
+        self.is_fitted = True
+
+        return self
+
+    def transform(self, raw_df: pd.DataFrame) -> pd.DataFrame:
+        """Apply previously learned cleaning artifacts."""
+
+        if not self.is_fitted:
+            raise RuntimeError("Call fit before transform.")
+
+        df = raw_df.copy()
+
+        df = self._prepare_base_columns(df)
+        df = self._add_total_demand(df)
+
+        if self.config.enable_oos_imputation:
+            df = self._apply_imputation(df)
+
+        if self.config.enable_winsorization:
+            df = self._apply_winsorization(df)
 
         return self._format_output(df)
+
+    def fit_transform(self, raw_df: pd.DataFrame) -> pd.DataFrame:
+        """Learn artifacts and transform historical training data."""
+
+        self.fit(raw_df)
+        return self.transform(raw_df)
 
     def _prepare_base_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """Initialize new columns"""
 
         df = df.rename(columns={ArticleKey.DEMAND.value: PipelineKey.DEMAND_RAW.value})
 
-        df[PipelineKey.DEMAND_CLEANED.value] = df[PipelineKey.DEMAND_RAW.value]
+        df[PipelineKey.DEMAND_CLEANED.value] = df[PipelineKey.DEMAND_RAW.value].astype(
+            float
+        )
         df[PipelineKey.WAS_IMPUTED.value] = 0
         df[PipelineKey.WAS_WINSORIZED.value] = 0
 
@@ -62,14 +127,12 @@ class HistoryCleaner:
 
         return df
 
-    def _impute_out_of_stock(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Impute suspicious zero demand values using PLU medians."""
+    def _fit_imputation_artifacts(self, df: pd.DataFrame) -> None:
+        """Learn PLU medians and popularity from training history."""
 
         plu_col = ArticleKey.PLU.value
         dow_col = DayKey.DAY_OF_WEEK.value
         clean_dem_col = PipelineKey.DEMAND_CLEANED.value
-        total_dem_col = PipelineKey.RESTAURANT_TOTAL_DEMAND.value
-        imputed_col = PipelineKey.WAS_IMPUTED.value
 
         sales_only = df[df[clean_dem_col] > 0]
 
@@ -78,20 +141,35 @@ class HistoryCleaner:
         plu_medians = sales_only.groupby(plu_col)[clean_dem_col].median()
 
         self.artifacts_plu_dow_median = cast(
-            Dict[Tuple[int, int], float],
+            dict[tuple[int, int], float],
             plu_dow_medians.to_dict(),
         )
         self.artifacts_plu_median = cast(
-            Dict[int, float],
+            dict[int, float],
             plu_medians.to_dict(),
         )
 
         plu_history_medians = df.groupby(plu_col)[clean_dem_col].median()
+        self.artifacts_popular_plu = cast(
+            dict[int, bool],
+            plu_history_medians.gt(2).to_dict(),
+        )
 
-        # if historicla median demand for the PLU is greater than 2,
+    def _apply_imputation(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Impute suspicious zero demand using learned artifacts."""
+
+        plu_col = ArticleKey.PLU.value
+        dow_col = DayKey.DAY_OF_WEEK.value
+        clean_dem_col = PipelineKey.DEMAND_CLEANED.value
+        total_dem_col = PipelineKey.RESTAURANT_TOTAL_DEMAND.value
+        imputed_col = PipelineKey.WAS_IMPUTED.value
+
+        # If historical median demand for the PLU is greater than 2,
         # we consider it as popular and impute zeros with median,
         # otherwise we keep zeros as they are likely correct
-        is_popular_plu = df[plu_col].map(plu_history_medians).fillna(0).gt(2)
+        is_popular_plu = (
+            df[plu_col].map(self.artifacts_popular_plu).fillna(False).astype(bool)
+        )
 
         mask_oos = df[total_dem_col].gt(0) & df[clean_dem_col].eq(0) & is_popular_plu
 
@@ -114,21 +192,38 @@ class HistoryCleaner:
 
         return df
 
-    def _winsorize_demand(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Cap demand_cleaned values above each PLU quantile threshold."""
+    def _fit_winsorization_artifacts(self, df: pd.DataFrame) -> None:
+        """Learn each PLU winsorization threshold from training history."""
+
+        plu_col = ArticleKey.PLU.value
+        clean_demand_col = PipelineKey.DEMAND_CLEANED.value
+
+        positive_sales = df[df[clean_demand_col] > 0]
+
+        grouped_sales = positive_sales.groupby(plu_col)[clean_demand_col]
+
+        positive_counts = grouped_sales.size()
+
+        thresholds = grouped_sales.quantile(self.config.winsorized_quantile)
+
+        eligible_plu = positive_counts[
+            positive_counts >= self.config.min_winsorization_observations
+        ].index
+
+        thresholds = thresholds.loc[eligible_plu]
+
+        self.artifacts_winsorization_threshold = cast(
+            dict[int, float],
+            thresholds.to_dict(),
+        )
+
+    def _apply_winsorization(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Cap demand using previously learned PLU thresholds."""
 
         plu_col = ArticleKey.PLU.value
         clean_dem_col = PipelineKey.DEMAND_CLEANED.value
         winsorized_col = PipelineKey.WAS_WINSORIZED.value
 
-        winsorization_thresholds = df.groupby(plu_col)[clean_dem_col].quantile(
-            self.winsorized_quantile
-        )
-
-        self.artifacts_winsorization_threshold = cast(
-            Dict[int, float],
-            winsorization_thresholds.to_dict(),
-        )
         threshold_series = (
             df[plu_col].map(self.artifacts_winsorization_threshold).fillna(np.inf)
         )

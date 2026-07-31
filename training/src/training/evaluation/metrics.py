@@ -25,7 +25,7 @@ class RegressionMetrics:
             if np.isclose(absolute_error_sum, 0.0):
                 return 0.0
 
-            return float("inf")
+            return float("nan")
 
         return float(absolute_error_sum / actual_sum)
 
@@ -39,11 +39,15 @@ class RegressionMetrics:
 
         y_true_arr = np.asarray(y_true, dtype=float)
         y_pred_arr = np.asarray(y_pred, dtype=float)
+        r2 = float("nan")
+
+        if y_true_arr.size >= 2:
+            r2 = float(r2_score(y_true_arr, y_pred_arr))
 
         return {
             "MAE": float(mean_absolute_error(y_true_arr, y_pred_arr)),
             "RMSE": float(np.sqrt(mean_squared_error(y_true_arr, y_pred_arr))),
-            "R2": float(r2_score(y_true_arr, y_pred_arr)),
+            "R2": r2,
             "WAPE": cls.calculate_wape(y_true_arr, y_pred_arr),
         }
 
