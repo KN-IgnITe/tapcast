@@ -4,10 +4,10 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import Ridge
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
 
 from training.data.data_splitter import DataSplitter
+from training.evaluation.metrics import RegressionMetrics
 from training.features.preprocessor import DataProcessor
 
 from training.data.mock_data_generator import ArticleKey, DayKey
@@ -105,27 +105,7 @@ class ModelTrainer:
         self, y_true: pd.Series, preds: np.ndarray | pd.Series
     ) -> Dict[str, float]:
         """Calculate and returns evaluation metrics for the predictions"""
-        # Convert to numpy arrays to avoid pandas index-alignment side effects
-        y_true_arr = np.asarray(y_true, dtype=float)
-        preds_arr = np.asarray(preds, dtype=float)
-
-        # Defence against potential issues with zero values in y_true
-        # 1. Calculate sum of absolute errors
-        sum_errors = np.sum(np.abs(y_true_arr - preds_arr))
-
-        # 2. Calculate sum of actual values.
-        sum_actuals = np.sum(y_true_arr)
-
-        # 3. Calculate WMAPE,
-        # adding a small constant to the denominator to avoid division by zero
-        wmape = sum_errors / (sum_actuals + 1e-10)
-
-        return {
-            "MAE": float(mean_absolute_error(y_true_arr, preds_arr)),
-            "RMSE": float(np.sqrt(mean_squared_error(y_true_arr, preds_arr))),
-            "R2": float(r2_score(y_true_arr, preds_arr)),
-            "MAPE": float(wmape),
-        }
+        return RegressionMetrics.calculate(y_true, preds)
 
     def _run_pipeline(
         self, train_df: pd.DataFrame, eval_df: pd.DataFrame
@@ -145,7 +125,7 @@ class ModelTrainer:
             "MAE": [],
             "RMSE": [],
             "R2": [],
-            "MAPE": [],
+            "WAPE": [],
         }
 
         for fold, (train_idx, val_idx) in enumerate(
@@ -162,7 +142,7 @@ class ModelTrainer:
             print(
                 f"Fold {fold + 1} | MAE: {metrics['MAE']:.4f} | "
                 f"RMSE: {metrics['RMSE']:.4f} | R2: {metrics['R2']:.4f} | "
-                f"MAPE: {metrics['MAPE']:.4f}"
+                f"WAPE: {metrics['WAPE']:.4f}"
             )
 
         # Summarize results across folds
@@ -180,7 +160,7 @@ class ModelTrainer:
         print(
             f"Test set evaluation | MAE: {metrics['MAE']:.4f} | "
             f"RMSE: {metrics['RMSE']:.4f} | R2: {metrics['R2']:.4f} | "
-            f"MAPE: {metrics['MAPE']:.4f}"
+            f"WAPE: {metrics['WAPE']:.4f}"
         )
 
         return metrics["MAE"]

@@ -41,23 +41,6 @@ def test_get_model_returns_correct_instances() -> None:
     assert isinstance(trainer_xgb._get_model(), XGBRegressor)
 
 
-def test_calculate_metrics_returns_expected_results() -> None:
-    """Checks if metrics are calculated correctly"""
-    trainer = ModelTrainer(ModelType.LOG_LIN)
-
-    y_true: pd.Series[int] = pd.Series([10, 20, 30])
-    y_pred: pd.Series[float] = pd.Series([12.0, 18.0, 30.0])
-
-    metrics = trainer._calculate_metrics(y_true, y_pred)
-
-    assert "MAE" in metrics
-    assert "MAPE" in metrics
-
-    assert np.isclose(metrics["MAE"], 4 / 3)
-
-    assert np.isclose(metrics["MAPE"], 4 / 60)
-
-
 def test_run_walk_forward_training_executes_succesfully(
     dummy_pipeline_data: pd.DataFrame,
 ) -> None:
