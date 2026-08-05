@@ -37,8 +37,8 @@ function Dashboard() {
 
             {/* factors section */}
             <section className="bg-white border border-gray-200/80 rounded-2xl p-5 shadow-sm space-y-3">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    prediction factors
+                <h2 className="text-xs font-semibold tracking-wider text-gray-400">
+                    PREDICTION FACTORS
                 </h2>
                 <div className="flex flex-wrap gap-2">
                     {factors.map((factor, index) => (
@@ -52,12 +52,22 @@ function Dashboard() {
                 </div>
             </section>
 
+            <section className="bg-white border border-gray-200/80 rounded-2xl p-5 shadow-sm space-y-3">
+                <h2 className="text-xs font-semibold tracking-wider text-gray-400">
+                    SETTINGS
+                </h2>
+                <div className="flex w-full gap-5">
+                    <div className="bg-gray-200 h-60 w-full rounded-2xl"></div>
+                    <div className="h-60 w-full"></div>
+                </div>
+            </section>
+
             {/* predictions section */}
             <section className="bg-white border border-gray-200/80 rounded-2xl p-6 shadow-sm space-y-5">
                 {/* controls */}
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                        Predictions
+                    <h2 className="text-xs font-semibold tracking-wider text-gray-400">
+                        PREDICTIONS
                     </h2>
                     <div className="flex gap-2">
                         <button className="px-3.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100/80 border border-gray-200 rounded-2xl shadow-2xs transition-all active:scale-95 cursor-pointer">
@@ -72,7 +82,7 @@ function Dashboard() {
                 {/* table container */}
                 <div className="space-y-2">
                     {/* column headers */}
-                    <div className="grid grid-cols-3 gap-4 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    <div className="grid grid-cols-3 gap-4 px-4 py-1 text-xs font-semibold tracking-wider text-gray-400">
                         <span>name</span>
                         <span>category</span>
                         <span className="text-right">remaining time</span>
