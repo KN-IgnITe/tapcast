@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "./App.css";
 import { FileUpload } from "./components/FileUpload";
 import { ProductForecast } from "./components/Productforecast";
+import { ActivePredictionFactors } from "./components/ActivePredictionFactors";
 
 type Joke = {
     setup: string;
@@ -157,7 +158,9 @@ function App() {
                 </div>
 
                 <div className="w-full h-px bg-slate-200 my-2"></div>
-
+                <div>
+                    <ActivePredictionFactors />
+                </div>
                 <FileUpload />
             </div>
         </div>

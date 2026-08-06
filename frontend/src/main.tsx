@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import Dashboard from "./dashboard/Dashboard.tsx";
+import App from "./App.tsx";
 
-createRoot(document.getElementById("root")!).render(<Dashboard />);
+createRoot(document.getElementById("root")!).render(<App />);
