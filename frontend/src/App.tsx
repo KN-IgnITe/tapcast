@@ -158,7 +158,9 @@ function App() {
                 </div>
 
                 <div className="w-full h-px bg-slate-200 my-2"></div>
-                <ActivePredictionFactors></ActivePredictionFactors>
+                <div>
+                    <ActivePredictionFactors />
+                </div>
                 <FileUpload />
             </div>
         </div>
