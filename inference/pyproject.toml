@@ -10,12 +10,14 @@ requires-python = ">=3.12"
 dependencies = [
     "grpcio (>=1.78.0,<2.0.0)",
     "protobuf (>=7.34.1,<8.0.0)",
-    "types-grpcio (>=1.0.0.20251009,<2.0.0.0)"
+    "types-grpcio (>=1.0.0.20251009,<2.0.0.0)",
 ]
 
 [tool.poetry]
 packages = [{include = "inference", from = "src"}]
 
+[tool.poetry.dependencies]
+ml-common = { path = "../ml_common", develop = true }
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
