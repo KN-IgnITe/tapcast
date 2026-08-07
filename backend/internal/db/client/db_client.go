@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Query string
@@ -58,6 +59,14 @@ func (client *DBClient) Create(ctx context.Context, value any) error {
 	return client.db.WithContext(ctx).Create(value).Error
 }
 
+func (client *DBClient) First(ctx context.Context, destination any) error {
+	return client.db.WithContext(ctx).First(destination).Error
+}
+
+func (client *DBClient) FirstByExample(ctx context.Context, destination any, example any) error {
+	return client.db.WithContext(ctx).Where(example).First(destination).Error
+}
+
 func (client *DBClient) FindAll(ctx context.Context, destination any) error {
 	return client.db.WithContext(ctx).Find(destination).Error
 }
@@ -76,4 +85,11 @@ func (client *DBClient) ExecuteQuery(ctx context.Context, queryName string, dest
 		return fmt.Errorf("query %s not found", queryName)
 	}
 	return client.db.WithContext(ctx).Raw(string(query), args...).Scan(dest).Error
+}
+
+func (client *DBClient) Upsert(ctx context.Context, value any) error {
+	return client.db.
+		WithContext(ctx).
+		Clauses(clause.OnConflict{UpdateAll: true}).
+		Create(value).Error
 }

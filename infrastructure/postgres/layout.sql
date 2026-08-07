@@ -30,10 +30,28 @@ CREATE Table IF NOT EXISTS weather(
         REFERENCES location(location_id)
 );
 
+CREATE Table IF NOT EXISTS weather_forecast(
+    weather_date DATE,
+
+    location_id INT,
+    avg_temp FLOAT  NOT NULL,
+    temp_amplitude FLOAT NOT NULL,
+    rain FLOAT NOT NULL DEFAULT 0  CHECK (rain >= 0),
+
+    forecast_date DATE  NOT NULL,
+
+    Primary Key(weather_date, location_id),
+    Foreign KEY(weather_date)
+        REFERENCES day(day_date),
+    Foreign KEY(location_id)
+        REFERENCES location(location_id)
+);
+
+
 CREATE TABLE IF NOT EXISTS article(
     bar_id INT,
     plu INT,
-    category INT NOT NULL,
+    category TEXT NOT NULL,
 
     Primary Key(bar_id, plu),
     Foreign KEY(bar_id)
