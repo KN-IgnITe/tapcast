@@ -1,17 +1,17 @@
 import type { ComponentType } from "react";
-import type { IconBaseProps } from "react-icons";
+import type { LucideProps } from "lucide-react";
 import {
-    FaMusic,
-    FaTrophy,
-    FaCloud,
-    FaArrowTrendUp,
-    FaUtensils,
-    FaCalendarDays,
-} from "react-icons/fa6";
+    Music,
+    Trophy,
+    Cloud,
+    TrendingUp,
+    Utensils,
+    Calendar,
+} from "lucide-react";
 
 interface PredictionFactorItem {
     name: string;
-    icon: ComponentType<IconBaseProps>;
+    icon: ComponentType<LucideProps>;
 }
 
 interface ActivePredictionFactorsProps {
@@ -21,15 +21,15 @@ interface ActivePredictionFactorsProps {
 }
 
 export function ActivePredictionFactors({
-    title = "Active Prediction Factors",
+    title = "Active Prediction Factors TEST",
     subtitle = "The following external factors are currently influencing order predictions",
     factors = [
-        { name: "Live Music Event", icon: FaMusic },
-        { name: "Football Match", icon: FaTrophy },
-        { name: "Warm Weather Forecast", icon: FaCloud },
-        { name: "Weekend Trend", icon: FaArrowTrendUp },
-        { name: "Cocktail Special Event", icon: FaUtensils },
-        { name: "Pub Quiz Night", icon: FaCalendarDays },
+        { name: "Live Music Event", icon: Music },
+        { name: "Football Match", icon: Trophy },
+        { name: "Warm Weather Forecast", icon: Cloud },
+        { name: "Weekend Trend", icon: TrendingUp },
+        { name: "Cocktail Special Event", icon: Utensils },
+        { name: "Pub Quiz Night", icon: Calendar },
     ],
 }: ActivePredictionFactorsProps) {
     return (
@@ -37,7 +37,7 @@ export function ActivePredictionFactors({
             {/* Header */}
             <div className="flex items-start gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 shadow-md">
-                    <FaArrowTrendUp size={24} color="#ffffff" />
+                    <TrendingUp size={24} color="#ffffff" />
                 </div>
 
                 <div>
