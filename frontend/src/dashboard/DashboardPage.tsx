@@ -1,4 +1,4 @@
-import OverviewTab from "./OverviewTab";
+import OverviewTab from "./overview_tab/OverviewTab";
 import Sidebar from "../components/Sidebar";
 import TabLayout from "./TabLayout";
 

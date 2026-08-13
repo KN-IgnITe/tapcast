@@ -1,38 +1,6 @@
-import Section from "../components/Section";
+import Section from "../../components/Section";
 
 type Prediction = { id: number; name: string; category: string; time: string };
-
-function FactorsSection({ factors }: { factors: string[] }) {
-    return (
-        <>
-            <Section title="FACTORS">
-                <div className="flex flex-wrap gap-2">
-                    {factors.map((factor, index) => (
-                        <span
-                            key={index}
-                            className="text-xs font-medium px-3 py-1.5 rounded-2xl transition-colors bg-gray-50/50 border border-gray-200/60 hover:bg-white hover:border-gray-300 cursor-default"
-                        >
-                            {factor}
-                        </span>
-                    ))}
-                </div>
-            </Section>
-        </>
-    );
-}
-
-function SettingsSection() {
-    return (
-        <>
-            <Section title="SETTINGS">
-                <div className="flex w-full gap-5">
-                    <div className="bg-gray-200 h-60 w-full rounded-2xl"></div>
-                    <div className="h-60 w-full"></div>
-                </div>
-            </Section>
-        </>
-    );
-}
 
 function PredictionsHeader() {
     return (
@@ -100,50 +68,17 @@ function PredictionsList({ predictions }: { predictions: Prediction[] }) {
     );
 }
 
-function PredictionsSection({ predictions }: { predictions: Prediction[] }) {
+export default function PredictionsSection({
+    predictions,
+}: {
+    predictions: Prediction[];
+}) {
     return (
         <>
             <Section title="PREDICTIONS">
                 <PredictionsHeader />
                 <PredictionsList predictions={predictions} />
             </Section>
-        </>
-    );
-}
-
-export default function OverviewTab() {
-    const factors = [
-        "Football match",
-        "Heavy rain",
-        "International Cat Day",
-        "Diddy party",
-        "KN IgnITe Anniversary",
-        "Piwo with Kicinski",
-    ];
-
-    const predictions = [
-        { id: 0, name: "Vodka", category: "Alcohol", time: "2 days" },
-        { id: 1, name: "Nachos", category: "Snacks", time: "5 days" },
-        { id: 2, name: "Cola", category: "Soft drinks", time: "13 days" },
-        { id: 3, name: "Vodka", category: "Alcohol", time: "2 days" },
-        { id: 4, name: "Nachos", category: "Snacks", time: "5 days" },
-        { id: 5, name: "Cola", category: "Soft drinks", time: "13 days" },
-        { id: 6, name: "Vodka", category: "Alcohol", time: "2 days" },
-        { id: 7, name: "Nachos", category: "Snacks", time: "5 days" },
-        { id: 8, name: "Cola", category: "Soft drinks", time: "13 days" },
-        { id: 9, name: "Vodka", category: "Alcohol", time: "2 days" },
-        { id: 10, name: "Nachos", category: "Snacks", time: "5 days" },
-        { id: 11, name: "Cola", category: "Soft drinks", time: "13 days" },
-        { id: 12, name: "Vodka", category: "Alcohol", time: "2 days" },
-        { id: 13, name: "Nachos", category: "Snacks", time: "5 days" },
-        { id: 14, name: "Cola", category: "Soft drinks", time: "13 days" },
-    ];
-
-    return (
-        <>
-            <FactorsSection factors={factors} />
-            <SettingsSection />
-            <PredictionsSection predictions={predictions} />
         </>
     );
 }
