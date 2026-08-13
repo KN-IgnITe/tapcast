@@ -13,14 +13,15 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/m1kus3q/pubpredictor/backend/internal/auth"
 	"github.com/m1kus3q/pubpredictor/backend/internal/client/weather"
 	dbclient "github.com/m1kus3q/pubpredictor/backend/internal/db/client"
 	"github.com/m1kus3q/pubpredictor/backend/internal/db/models"
 	api "github.com/m1kus3q/pubpredictor/backend/internal/handlers"
+	"github.com/m1kus3q/pubpredictor/backend/internal/server"
 	pb "github.com/m1kus3q/pubpredictor/backend/pkg/pb/ping/v1"
 )
 
@@ -105,6 +106,15 @@ func main() {
 		WeatherClient: weatherClientInstance,
 	}
 
+	ctx := context.Background()
+
+	// firebase authenticator initialization
+	authClient, err := auth.NewAuthenticator(ctx)
+	if err != nil {
+		log.Fatalf("failed to initialize auth: %v", err)
+	}
+
+	// base router setup
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -113,14 +123,12 @@ func main() {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
-		AllowedHeaders: []string{"Content-Type"},
-	}))
+	// application server routes
+	srvRoutes := server.NewServer(authClient).Routes()
+	r.Mount("/", srvRoutes)
 
+	// custom endpoint mounts
 	r.Get("/api/ping", app.pingHandler)
-
 	r.Post("/uploadXLSX", uploadHandler.HandleXLSX)
 
 	srv := &http.Server{
@@ -131,6 +139,7 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
+	// graceful shutdown setup
 	go func() {
 		app.logger.Printf("Starting Chi server on %s", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
