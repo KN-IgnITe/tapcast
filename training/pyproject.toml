@@ -8,6 +8,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "ml-common",
     "pika (>=1.3.2,<2.0.0)",
     "scikit-learn (>=1.8.0,<2.0.0)",
     "psycopg2-binary (>=2.9.11,<3.0.0)",
@@ -38,7 +39,8 @@ dev = [
     "mypy (>=1.19.1,<2.0.0)",
     "pandas-stubs (>=3.0.0.260204,<4.0.0.0)",
     "types-jsonschema (>=4.26.0.20260408,<5.0.0.0)",
-    "pytest (>=9.0.3,<10.0.0)"
+    "pytest (>=9.0.3,<10.0.0)",
+    "types-pika-ts (>=1.3.0,<1.4.0)"
 ]
 
 [tool.mypy]
@@ -49,6 +51,6 @@ module = [
     "pandas.*",
     "sklearn.*",
     "xgboost.*",
-    "joblib.*"
+    "joblib.*",
 ]
 ignore_missing_imports = true
