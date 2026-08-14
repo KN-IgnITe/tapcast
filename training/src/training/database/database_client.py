@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 import re
+from types import TracebackType
 
 import psycopg
 from psycopg.rows import dict_row
-from types import TracebackType
-from typing import List, Optional
 
 from training.database.database_config import DatabaseConfig
 
@@ -14,7 +13,7 @@ from training.database.database_config import DatabaseConfig
 class DatabaseClient:
     def __init__(self, config: DatabaseConfig) -> None:
         self._config = config
-        self._connection: Optional[psycopg.Connection] = None
+        self._connection: psycopg.Connection | None = None
 
     def connect(self) -> bool:
         """Opens a connection only if it is closed."""
@@ -52,8 +51,8 @@ class DatabaseClient:
 
     @staticmethod
     def _normalize_query(
-        query: str, params: Optional[tuple] = None
-    ) -> tuple[str, Optional[tuple]]:
+        query: str, params: tuple | None = None
+    ) -> tuple[str, tuple | None]:
         """Converts $1, $2... style queries to %s and reorders params accordingly."""
         if params is None:
             return query, params
@@ -66,14 +65,50 @@ class DatabaseClient:
         normalized_query = re.sub(r"\$\d+", "%s", query)
         return normalized_query, normalized_params
 
-    def fetch(self, query: str, params: Optional[tuple] = None) -> List[dict]:
-        if not self._connection or self._connection.closed:
+    def fetch(self, query: str, params: tuple | None = None) -> list[dict]:
+        connection = self._require_connection()
+        normalized_query, normalized_params = self._normalize_query(query, params)
+
+        with connection.transaction():
+            with connection.cursor(row_factory=dict_row) as cursor:
+                cursor.execute(normalized_query, normalized_params)
+                return cursor.fetchall()
+
+    def _require_connection(self) -> psycopg.Connection:
+        """Return an open database connection."""
+
+        if self._connection is None or self._connection.closed:
             raise ConnectionError(
                 "No connection available. Use 'with DatabaseClient(...) as client'."
             )
 
+        return self._connection
+
+    def execute(
+        self,
+        query: str,
+        params: tuple | None = None,
+    ) -> int:
+        """Execute a write query and return the number of affected rows."""
+
+        connection = self._require_connection()
         normalized_query, normalized_params = self._normalize_query(query, params)
 
-        with self._connection.cursor(row_factory=dict_row) as cur:
-            cur.execute(normalized_query, normalized_params)
-            return cur.fetchall()
+        with connection.transaction(), connection.cursor() as cursor:
+            cursor.execute(normalized_query, normalized_params)
+            return cursor.rowcount
+
+    def execute_returning_one(
+        self,
+        query: str,
+        params: tuple | None = None,
+    ) -> dict | None:
+        """Execute a write query and return its first returned row."""
+
+        connection = self._require_connection()
+        normalized_query, normalized_params = self._normalize_query(query, params)
+
+        with connection.transaction():
+            with connection.cursor(row_factory=dict_row) as cursor:
+                cursor.execute(normalized_query, normalized_params)
+                return cursor.fetchone()
