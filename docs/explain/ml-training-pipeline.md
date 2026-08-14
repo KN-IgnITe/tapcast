@@ -10,7 +10,7 @@ The model predicts demand for a specific PLU and date using product, category, c
 
 The pipeline follows these steps:
 
-1. Load raw demand data from JSON.
+1. Load demand data from a JSON export or export it from PostgreSQL.
 2. Clean historical demand.
 3. Build leakage-safe training features.
 4. Run chronological backtesting.
@@ -19,6 +19,33 @@ The pipeline follows these steps:
 7. Evaluate the selected configuration on the final untouched test set.
 8. Train the production model on all available data.
 9. Export the production model bundle.
+
+## Execution Modes
+
+The training pipeline can be started in two ways.
+
+### Manual Training
+
+`training.main` loads an existing JSON export and executes the complete
+training pipeline directly.
+
+This mode is intended for local experimentation, evaluation and debugging.
+
+### On-Demand Training
+
+`training.worker` runs as a long-lived service and waits for job identifiers
+from RabbitMQ.
+
+For each job, the worker:
+
+1. Claims the job in PostgreSQL.
+2. Exports current bar data using `query_v2.sql`.
+3. Executes the same model training pipeline.
+4. Uploads the production bundle to S3-compatible storage.
+5. Updates the job status in PostgreSQL.
+
+Both execution modes use the same model training components. The worker uses
+`DemandTrainingPipeline` as the production orchestration layer.
 
 ## Important Columns
 
@@ -105,6 +132,14 @@ The bundle contains:
 
 ## Inference
 
-The current pipeline is focused on training.
+The production bundle is uploaded to S3-compatible storage.
 
-Future inference code must build feature rows for future dates without `target_demand`, load the exported artifacts and call the trained model.
+The inference service downloads the bundle and loads:
+
+- the XGBoost model,
+- the fitted preprocessor,
+- cleaner artifacts,
+- model metadata.
+
+Future-date feature rows must be built without `target_demand`. They must use
+the same feature definitions and preprocessing rules as the training pipeline.
