@@ -1,9 +1,11 @@
 FROM python:3.12-slim
-WORKDIR /app
+WORKDIR /app/training
 RUN pip install poetry
-COPY pyproject.toml poetry.lock* ./
-RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi --no-root
-COPY src/ ./src/
-COPY data/ ./data/
-ENV PYTHONPATH=/app/src
-CMD ["python", "-m", "training.main"]
+COPY ml_common /app/ml_common
+COPY training/pyproject.toml training/poetry.lock* ./
+RUN poetry config virtualenvs.create false \
+    && poetry install --only main --no-interaction --no-ansi --no-root
+COPY training/src/ ./src/
+COPY infrastructure /app/infrastructure
+ENV PYTHONPATH=/app/training/src
+CMD ["python", "-m", "training.worker"]
