@@ -60,8 +60,10 @@ services:
 
   training:
     build:
-      context: .
-      dockerfile: training/Dockerfile
+      context: ./training
+      additional_contexts:
+        ml_common: ./ml_common
+        postgres_queries: ./infrastructure/postgres
     depends_on:
       - postgres
       - rabbitmq
