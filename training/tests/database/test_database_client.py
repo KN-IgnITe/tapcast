@@ -195,3 +195,106 @@ def test_fetch_orders_backend_placeholder_params(db_config: DatabaseConfig) -> N
     cursor.execute.assert_called_once_with(
         "SELECT * FROM sale WHERE plu = %s OR bar_id = %s", (539, 1)
     )
+
+
+def test_execute_returns_number_of_affected_rows(
+    db_config: DatabaseConfig,
+) -> None:
+    client = DatabaseClient(db_config)
+
+    connection = MagicMock()
+    connection.closed = False
+
+    cursor_cm = MagicMock()
+    cursor = MagicMock()
+    cursor.rowcount = 1
+    cursor_cm.__enter__.return_value = cursor
+    connection.cursor.return_value = cursor_cm
+
+    client._connection = connection
+
+    result = client.execute(
+        "UPDATE model_training_job SET status = $1 WHERE job_id = $2",
+        ("COMPLETED", "job-id"),
+    )
+
+    assert result == 1
+    connection.transaction.assert_called_once_with()
+    cursor.execute.assert_called_once_with(
+        "UPDATE model_training_job SET status = %s WHERE job_id = %s",
+        ("COMPLETED", "job-id"),
+    )
+
+
+def test_execute_raises_when_connection_missing(db_config: DatabaseConfig) -> None:
+    client = DatabaseClient(db_config)
+
+    with pytest.raises(ConnectionError, match="No connection available"):
+        client.execute("UPDATE model_training_job SET status = 'FAILED'")
+
+
+def test_execute_returning_one_returns_row(db_config: DatabaseConfig) -> None:
+    client = DatabaseClient(db_config)
+
+    connection = MagicMock()
+    connection.closed = False
+
+    cursor_cm = MagicMock()
+    cursor = MagicMock()
+    cursor_cm.__enter__.return_value = cursor
+    connection.cursor.return_value = cursor_cm
+
+    row = {"job_id": "job-id", "status": "RUNNING"}
+    cursor.fetchone.return_value = row
+    client._connection = connection
+
+    result = client.execute_returning_one(
+        "UPDATE model_training_job SET status = $1 "
+        "WHERE job_id = $2 RETURNING job_id, status",
+        ("RUNNING", "job-id"),
+    )
+
+    assert result == row
+    connection.transaction.assert_called_once_with()
+    cursor.execute.assert_called_once_with(
+        "UPDATE model_training_job SET status = %s "
+        "WHERE job_id = %s RETURNING job_id, status",
+        ("RUNNING", "job-id"),
+    )
+    cursor.fetchone.assert_called_once_with()
+
+
+def test_execute_returning_one_returns_none_when_no_row_matches(
+    db_config: DatabaseConfig,
+) -> None:
+    client = DatabaseClient(db_config)
+
+    connection = MagicMock()
+    connection.closed = False
+
+    cursor_cm = MagicMock()
+    cursor = MagicMock()
+    cursor_cm.__enter__.return_value = cursor
+    connection.cursor.return_value = cursor_cm
+    cursor.fetchone.return_value = None
+
+    client._connection = connection
+
+    result = client.execute_returning_one(
+        "UPDATE model_training_job SET status = $1 "
+        "WHERE job_id = $2 RETURNING job_id",
+        ("RUNNING", "missing-job-id"),
+    )
+
+    assert result is None
+
+
+def test_execute_returning_one_raises_when_connection_missing(
+    db_config: DatabaseConfig,
+) -> None:
+    client = DatabaseClient(db_config)
+
+    with pytest.raises(ConnectionError, match="No connection available"):
+        client.execute_returning_one(
+            "UPDATE model_training_job SET status = 'RUNNING' RETURNING job_id"
+        )
