@@ -12,6 +12,7 @@ import (
 
 	"github.com/m1kus3q/pubpredictor/backend/internal/client/weather"
 	dbclient "github.com/m1kus3q/pubpredictor/backend/internal/db/client"
+	"github.com/m1kus3q/pubpredictor/backend/internal/db/models"
 	"github.com/m1kus3q/pubpredictor/backend/internal/handlers"
 	"github.com/m1kus3q/pubpredictor/backend/internal/message_channel"
 	"github.com/m1kus3q/pubpredictor/backend/internal/minio"
@@ -51,6 +52,15 @@ func TestWorker(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to connect to DB: %v", err)
 	}
+
+	err = dbClient.GetDB().AutoMigrate(
+		&models.Day{},
+		&models.Location{},
+		&models.Bar{},
+		&models.Weather{},
+		&models.Article{},
+		&models.Sale{},
+	)
 
 	minioClient, err := minioClient.NewMinIOClientFromEnv(ctx)
 	if err != nil {
