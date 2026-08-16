@@ -1,13 +1,12 @@
 //go:build integration
 
-package test
+package db
 
 import (
-  "os"
+	"os"
 	"testing"
 
 	"github.com/m1kus3q/pubpredictor/backend/internal/db/client"
-	"github.com/m1kus3q/pubpredictor/backend/internal/db"
 )
 
 func TestDatabaseConnectionWithClient(t *testing.T) {
@@ -22,10 +21,6 @@ func TestDatabaseConnectionWithClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	myDB := db_client.GetDB()
-
-	if err != nil {
-		t.Fatalf("failed to connect to database: %v", err)
-	}
 
 	sqlDb, err := myDB.DB()
 	if err != nil {
@@ -49,7 +44,7 @@ func TestConnectFunction(t *testing.T) {
 		t.Fatal("Required environment variables are not set for integration test")
 	}
 
-	database, err := db.Connect(host, user, pass, name, port)
+	database, err := Connect(host, user, pass, name, port)
 
 	if err != nil {
 		t.Fatalf("db.Connect() failed: %v", err)
