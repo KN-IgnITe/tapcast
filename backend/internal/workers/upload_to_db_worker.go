@@ -52,11 +52,17 @@ func (w *UploadWorker) Run() {
 
 	for {
 		select {
-		case objectKey := <-jobs:
+		case objectKey, ok := <-jobs:
+			if !ok {
+				log.Println("Message queue closed")
+				return
+			}
+
 			err := w.processObject(ctx, objectKey)
 			if err != nil {
 				log.Printf("Failed to process %s: %v", objectKey, err)
 			}
+
 		case <-ticker.C:
 			w.scanStorage(ctx)
 		}
@@ -75,6 +81,12 @@ func (w *UploadWorker) scanStorage(ctx context.Context) {
 			log.Printf("Failed to get status tag for %q: %v", key, err)
 			continue
 		}
+
+		if status == nil {
+			log.Printf("Object %q has no status tag", key)
+			continue
+		}
+
 		if *status == minio.StatusQueued {
 			_ = w.processObject(ctx, key)
 		}
