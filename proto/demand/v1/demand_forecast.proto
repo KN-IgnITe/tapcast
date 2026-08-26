@@ -7,7 +7,7 @@ service DemandForecastService {
         returns (ForecastDemandResponse);
 }
 
-// Requests demand forecasts for an inclusive date range of up to 14 days.
+// Requests demand forecasts for selected products and an inclusive date range.
 message ForecastDemandRequest{
     int64 bar_id = 1;
 
@@ -16,6 +16,8 @@ message ForecastDemandRequest{
 
     // Inclusive last forecast date in YYYY-MM-DD format.
     string date_to = 3;
+
+    repeated int64 plu_ids = 4;
 }
 
 // Represents forecast demand for one product on one day.
@@ -31,7 +33,7 @@ message ProductDemandForecast {
     double total_predicted_quantity = 3;
 }
 
-// Contains forecasts for all active products in the selected bar.
+// Contains forecasts only for products selected in the request.
 message ForecastDemandResponse {
     repeated ProductDemandForecast products = 1;
 }
