@@ -1,23 +1,30 @@
 # Demand Forecast Response
 
+## Product Selection
+
+The backend must provide one or more PLU identifiers in the forecast request.
+
+The inference service calculates predictions only for the requested PLUs. An empty PLU list is invalid and does not mean that all products should be forecast.
+
+When a user selects a category, the backend is responsible for resolving that category to its PLUs before requesting a forecast.
+
 ## Inference Output
 
-The inference service returns model-related forecast data:
+For every requested PLU, the inference service returns:
 
-- PLU;
 - predicted quantity for each requested day;
 - total predicted quantity for the selected date range.
 
-The model may return fractional quantities. Display rounding should be handled after calculating the aggregated prediction.
+The model may return fractional quantities. Display rounding should be applied after calculating the aggregated prediction.
 
 ## Backend Enrichment
 
-Before returning forecasts to the frontend, the backend should enrich each product result with data stored in the database:
+Before returning forecasts to the frontend, the backend enriches each result with data stored in the database:
 
 - product name;
 - unit;
 - category name;
-- other product presentation details required by the UI.
+- other presentation details required by the UI.
 
 The backend matches forecast results with product data using the PLU.
 
@@ -29,5 +36,3 @@ The current inference response does not include:
 - feature contributions;
 - event contributions;
 - category-level aggregates.
-
-These capabilities require additional implementation in training or inference before they can be exposed to the frontend.
