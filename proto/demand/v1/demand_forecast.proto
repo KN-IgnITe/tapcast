@@ -1,0 +1,35 @@
+syntax = "proto3";
+package demand.v1;
+import "google/type/date.proto";
+option go_package = "github.com/m1kus3q/pubpredictor/backend/pkg/pb/demand/v1;demandv1";
+// Provides product demand forecasts for future dates.
+service DemandForecastService {
+    rpc ForecastDemand(ForecastDemandRequest)
+        returns (ForecastDemandResponse);
+}
+
+// Requests demand forecasts for selected products and an inclusive date range.
+message ForecastDemandRequest {
+    int64 bar_id = 1;
+    google.type.Date date_from = 2;
+    google.type.Date date_to = 3;
+    repeated int64 plu_ids = 4;
+}
+
+// Represents forecast demand for one product on one day.
+message DailyDemandForecast {
+    google.type.Date date = 1;
+    double predicted_quantity = 2;
+}
+
+// Contains daily and aggregated forecasts for one product.
+message ProductDemandForecast {
+    int64 plu = 1;
+    repeated DailyDemandForecast daily_forecasts = 2;
+    double total_predicted_quantity = 3;
+}
+
+// Contains forecasts only for products selected in the request.
+message ForecastDemandResponse {
+    repeated ProductDemandForecast products = 1;
+}
