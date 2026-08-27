@@ -11,6 +11,7 @@ dependencies = [
     "grpcio (>=1.78.0,<2.0.0)",
     "protobuf (>=7.36.0,<8.0.0)",
     "types-grpcio (>=1.0.0.20251009,<2.0.0.0)",
+    "googleapis-common-protos (>=1.75.2,<2.0.0)",
 ]
 
 [tool.poetry]
