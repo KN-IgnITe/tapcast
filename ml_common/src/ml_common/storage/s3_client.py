@@ -13,6 +13,7 @@ from ml_common.storage.s3_config import S3Config
 
 if TYPE_CHECKING:
     from mypy_boto3_s3.client import S3Client as BotoS3Client
+    from mypy_boto3_s3.type_defs import PutObjectRequestTypeDef
 else:
     BotoS3Client = Any
 
@@ -30,7 +31,10 @@ class S3Client:
         if self._client is None:
             self._client = boto3.client(
                 "s3",
-                **self._config.get_client_config(),
+                endpoint_url=self._config.endpoint_url,
+                aws_access_key_id=self._config.aws_access_key_id,
+                aws_secret_access_key=self._config.aws_secret_access_key,
+                region_name=self._config.region_name,
             )
 
     def close(self) -> None:
@@ -92,18 +96,17 @@ class S3Client:
 
         client: BotoS3Client = self._get_client()
 
-        extra_args: dict[str, str] = {}
+        request: PutObjectRequestTypeDef = {
+            "Bucket": self._config.bucket_name,
+            "Key": key,
+            "Body": data,
+        }
 
         if content_type is not None:
-            extra_args["ContentType"] = content_type
+            request["ContentType"] = content_type
 
         try:
-            client.put_object(
-                Bucket=self._config.bucket_name,
-                Key=key,
-                Body=data,
-                **extra_args,
-            )
+            client.put_object(**request)
         except ClientError as error:
             raise StorageError(f"Failed to upload bytes to S3: {key}") from error
 
