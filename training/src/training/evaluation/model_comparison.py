@@ -1,14 +1,22 @@
+from dataclasses import dataclass
 from typing import cast
 
 import pandas as pd
 
 from training.data.data_splitter import DataSplitter
+from training.evaluation.backtest import BacktestResult
+from training.evaluation.model_backtester import ModelBacktester
 from training.features.temporal_matrix_builder import TemporalMatrixBuilder
-from training.models.model_trainer import (
-    ModelTrainer,
-    ModelType,
+from training.models.xgboost_strategy import (
     XGBoostObjective,
+    XGBoostTrainingStrategy,
 )
+
+
+@dataclass(frozen=True)
+class ObjectiveComparisonResult:
+    summary: pd.DataFrame
+    backtests: dict[XGBoostObjective, BacktestResult]
 
 
 class ModelComparison:
@@ -25,23 +33,24 @@ class ModelComparison:
         df: pd.DataFrame,
         splitter: DataSplitter,
         matrix_builder: TemporalMatrixBuilder,
-    ) -> pd.DataFrame:
+    ) -> ObjectiveComparisonResult:
         rows: list[dict[str, object]] = []
+        backtests: dict[XGBoostObjective, BacktestResult] = {}
 
         for objective in cls.objectives:
-            trainer = ModelTrainer(
-                model_type=ModelType.XGBOOST, xgboost_objective=objective
-            )
+            strategy = XGBoostTrainingStrategy(objective=objective)
+            result = ModelBacktester(
+                strategy=strategy,
+                splitter=splitter,
+                matrix_builder=matrix_builder,
+            ).run(df)
 
-            result = trainer.run_walk_forward_training(
-                df,
-                splitter,
-                matrix_builder,
-            )
-
+            backtests[objective] = result
             rows.append({"objective": objective, **result.global_metrics})
 
-        return pd.DataFrame(rows)
+        return ObjectiveComparisonResult(
+            summary=pd.DataFrame(rows), backtests=backtests
+        )
 
     @staticmethod
     def select_best_objective(
