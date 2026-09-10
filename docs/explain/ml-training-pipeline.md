@@ -53,6 +53,14 @@ The training matrix contains leakage-safe features such as:
 
 Historical features must not use data newer than the target date minus the safety buffer.
 
+## Preprocessing and Model Training
+
+Feature building calculates historical demand features. Preprocessing then selects the model's input columns and applies model-specific encoding, imputation or scaling.
+
+FeatureSchema and the XGBoost and Ridge preprocessors live in ml_common. ModelTrainer separates target_demand from the input features and uses a training strategy to fit the estimator. Date and target_demand are not estimator inputs.
+
+Each training run uses a fresh preprocessor fitted only on its training partition. Evaluation rows use transform without fitting again. Future inference must use the fitted preprocessor saved in the model bundle.
+
 ## Backtesting
 
 The model is evaluated using chronological walk-forward backtesting.
