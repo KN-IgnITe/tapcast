@@ -14,27 +14,21 @@ class S3ModelBundleStore:
     def __init__(self, client: S3Client) -> None:
         self._client: S3Client = client
 
-    def upload_bundle_from_dir(
-        self, source_dir: Path, prefix: str
-    ) -> None:
+    def upload_bundle_from_dir(self, source_dir: Path, prefix: str) -> None:
         """Upload model bundle files from a local directory."""
 
         for file_name in MODEL_BUNDLE_FILES:
             local_path: Path = source_dir / file_name
 
             if not local_path.exists():
-                raise FileNotFoundError(
-                    f"Missing model bundle file {local_path}"
-                )
+                raise FileNotFoundError(f"Missing model bundle file {local_path}")
 
             self._client.upload_file(
                 local_path=local_path,
                 key=build_model_bundle_key(prefix, file_name),
             )
 
-    def download_bundle_to_dir(
-        self, target_dir: Path, prefix: str
-    ) -> None:
+    def download_bundle_to_dir(self, target_dir: Path, prefix: str) -> None:
         """Download model bundle files into a local directory."""
 
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -74,9 +68,7 @@ class S3ModelBundleStore:
         """Check whether all expected model bundle files exist."""
 
         return all(
-            self._client.object_exists(
-                build_model_bundle_key(prefix, file_name)
-            )
+            self._client.object_exists(build_model_bundle_key(prefix, file_name))
             for file_name in MODEL_BUNDLE_FILES
         )
 
@@ -85,6 +77,4 @@ class S3ModelBundleStore:
         missing_files: set[str] = set(MODEL_BUNDLE_FILES) - set(file_names)
 
         if missing_files:
-            raise ValueError(
-                f"Missing model bundle files: {sorted(missing_files)}"
-            )
+            raise ValueError(f"Missing model bundle files: {sorted(missing_files)}")

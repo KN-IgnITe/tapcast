@@ -11,6 +11,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       inference: ${{ steps.filter.outputs.inference }}
       training: ${{ steps.filter.outputs.training }}
+      ml_common: ${{ steps.filter.outputs.ml_common }}
       frontend: ${{ steps.filter.outputs.frontend }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
@@ -26,8 +27,12 @@ jobs:
               - 'backend/**'
             inference:
               - 'inference/**'
+              - 'ml_common/**'
             training:
               - 'training/**'
+              - 'ml_common/**'
+            ml_common:
+              - 'ml_common/**'
             frontend:
               - 'frontend/**'
             docs:
@@ -151,6 +156,55 @@ jobs:
         run: |
           cd training
           poetry run pytest -v
+
+  ml-common-tests:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.ml_common == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: ml_common/.venv
+          key: venv-ml-common-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('ml_common/poetry.lock') }}
+
+      - name: Install dependencies via Poetry
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: |
+          cd ml_common
+          poetry install --no-interaction
+
+      - name: Run Black formatter check
+        run: cd ml_common && poetry run black --check src tests
+
+      - name: Run Flake8 linter
+        run: cd ml_common && poetry run flake8 src tests
+
+      - name: Run Mypy static type checker
+        run: |
+          cd ml_common
+          poetry run mypy --ignore-missing-imports src tests
+
+      - name: Execute ML Common Module Tests
+        run: |
+          cd ml_common
+          poetry run pytest -v  
 
   frontend-tests:
     needs: detect-changes
