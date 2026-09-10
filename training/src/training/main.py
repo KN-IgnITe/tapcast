@@ -2,24 +2,28 @@ import os
 from pathlib import Path
 
 import numpy as np
-
 from ml_common.artifacts.s3_model_bundle_store import S3ModelBundleStore
 from ml_common.storage.s3_client import S3Client
 from ml_common.storage.s3_config import S3Config
-from training.data.data_loader import DemandDataLoader
-from training.data.data_splitter import DataSplitter
+
 from training.artifacts.model_bundle import (
     ProductionModelBundle,
     ProductionModelBundleExporter,
 )
 from training.artifacts.xgboost_io import XGBoostExporter
+from training.data.columns import PipelineKey
+from training.data.data_loader import DemandDataLoader
+from training.data.data_splitter import DataSplitter
 from training.evaluation.backtest import BackTestRunner
 from training.evaluation.baseline import Lag14Baseline
+from training.evaluation.early_stopping_selector import EarlyStoppingSelector
+from training.evaluation.metrics import RegressionMetrics
 from training.evaluation.model_comparison import ModelComparison
 from training.evaluation.window_evaluator import WindowEvaluator
 from training.features.history_cleaner import HistoryCleanerConfig
 from training.features.temporal_matrix_builder import TemporalMatrixBuilder
-from training.models.model_trainer import ModelTrainer, ModelType
+from training.models.model_trainer import ModelTrainer
+from training.models.xgboost_strategy import XGBoostTrainingStrategy
 
 DEFAULT_MODEL_BUNDLE_S3_PREFIX = "demand-model/latest"
 
@@ -54,34 +58,22 @@ def main() -> None:
     )
 
     print("\nObjective comparison:")
-    print(comparison.to_string(index=False))
+    print(comparison.summary.to_string(index=False))
 
-    best_objective = ModelComparison.select_best_objective(
-        comparison,
-        metric="WAPE",
-    )
+    best_objective = ModelComparison.select_best_objective(comparison.summary)
+    backtest_result = comparison.backtests[best_objective]
 
     print(f"\nSelected objective: {best_objective}")
 
-    trainer = ModelTrainer(
-        model_type=ModelType.XGBOOST,
-        xgboost_objective=best_objective,
+    selection_strategy = XGBoostTrainingStrategy(
+        objective=best_objective,
     )
-    # trainer = ModelTrainer(
-    #     model_type=ModelType.LOG_LIN
-    # )
-
-    backtest_result = trainer.run_walk_forward_training(
-        raw_train_val_df,
-        splitter,
-        matrix_builder,
+    selector = EarlyStoppingSelector(
+        strategy=selection_strategy,
+        splitter=splitter,
+        matrix_builder=matrix_builder,
     )
-
-    final_tree_count = trainer.select_final_tree_count(
-        raw_train_val_df,
-        splitter,
-        matrix_builder,
-    )
+    final_tree_count = selector.select(raw_train_val_df)
 
     print(f"\nFinal tree count: {final_tree_count}")
 
@@ -121,14 +113,20 @@ def main() -> None:
         raw_test_df,
     )
 
-    evaluation_trainer = ModelTrainer(
-        model_type=ModelType.XGBOOST,
-        xgboost_objective=best_objective,
+    final_strategy = XGBoostTrainingStrategy(
+        objective=best_objective,
         n_estimators=final_tree_count,
+        scale_numeric=selection_strategy.scale_numeric,
+        schema=selection_strategy.schema,
+        use_early_stopping=False,
     )
-    test_metrics = evaluation_trainer.evaluate_on_test(
-        train_val_matrix,
-        test_matrix,
+    evaluation_trainer = ModelTrainer(strategy=final_strategy)
+    evaluation_trainer.fit(train_val_matrix)
+
+    test_predictions = evaluation_trainer.predict(test_matrix)
+    test_metrics = RegressionMetrics.calculate(
+        y_true=test_matrix[PipelineKey.TARGET_DEMAND.value],
+        y_pred=test_predictions,
     )
 
     print("\nFinal untouched test:")
@@ -136,33 +134,23 @@ def main() -> None:
 
     final_matrix, final_cleaner = matrix_builder.build_training(raw_df)
 
-    production_trainer = ModelTrainer(
-        model_type=ModelType.XGBOOST,
-        xgboost_objective=best_objective,
-        n_estimators=final_tree_count,
-    )
-    production_trainer.fit_final(final_matrix)
+    production_trainer = ModelTrainer(strategy=final_strategy)
+    production_trainer.fit(final_matrix)
 
     production_model = production_trainer.model
     production_preprocessor = production_trainer.preprocessor
 
-    if production_model is None:
-        raise RuntimeError("Production model was not fitted.")
-
-    if production_preprocessor is None:
-        raise RuntimeError("Production preprocessor was not fitted.")
-
     artifact_dir = project_dir / "artifacts" / "production"
     production_bundle = ProductionModelBundle(
         model=production_model,
+        model_kind=final_strategy.model_kind,
         preprocessor=production_preprocessor,
         cleaner=final_cleaner,
         metadata={
-            "model_type": ModelType.XGBOOST.value,
             "xgboost_objective": best_objective,
             "n_estimators": final_tree_count,
-            "early_stopping_rounds": trainer.early_stopping_rounds,
-            "scale_numeric": production_trainer.scale_numeric,
+            "early_stopping_rounds": selection_strategy.early_stopping_rounds,
+            "scale_numeric": final_strategy.scale_numeric,
             "source_data": str(data_path.relative_to(project_dir)),
             "cleaning_config": {
                 "winsorized_quantile": cleaning_config.winsorized_quantile,
