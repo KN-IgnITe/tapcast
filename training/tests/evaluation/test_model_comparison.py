@@ -1,14 +1,13 @@
-from types import SimpleNamespace
-from typing import Any
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
-
-import training.evaluation.model_comparison as model_comparison_module
+import training.evaluation.model_comparison as comparison_module
 from training.data.data_splitter import DataSplitter
+from training.evaluation.backtest import BacktestResult
+from training.evaluation.model_backtester import ModelBacktester
 from training.evaluation.model_comparison import ModelComparison
 from training.features.temporal_matrix_builder import TemporalMatrixBuilder
-from training.models.model_trainer import ModelType, XGBoostObjective
 
 
 def test_compare_objectives_runs_each_configured_objective(
@@ -17,62 +16,47 @@ def test_compare_objectives_runs_each_configured_objective(
     raw_df = pd.DataFrame({"value": [1, 2, 3]})
     splitter = DataSplitter(n_splits=2)
     matrix_builder = TemporalMatrixBuilder()
-    called_objectives: list[XGBoostObjective] = []
+    metrics = [
+        {"MAE": 2.0, "RMSE": 3.0, "R2": 0.7, "WAPE": 0.4},
+        {"MAE": 1.5, "RMSE": 2.5, "R2": 0.8, "WAPE": 0.3},
+    ]
 
-    class FakeModelTrainer:
-        def __init__(
-            self,
-            model_type: ModelType,
-            xgboost_objective: XGBoostObjective,
-        ) -> None:
-            assert model_type == ModelType.XGBOOST
-            self.xgboost_objective = xgboost_objective
-            called_objectives.append(xgboost_objective)
+    results = [
+        BacktestResult(
+            global_metrics=item,
+            fold_metrics=[item],
+            per_plu=pd.DataFrame(),
+            per_category=pd.DataFrame(),
+            predictions=pd.DataFrame({"prediction": [10.0]}),
+        )
+        for item in metrics
+    ]
+    backtesters = [MagicMock(spec=ModelBacktester) for _ in results]
+    for backtester, result in zip(backtesters, results, strict=True):
+        backtester.run.return_value = result
 
-        def run_walk_forward_training(
-            self,
-            df: pd.DataFrame,
-            received_splitter: DataSplitter,
-            received_matrix_builder: TemporalMatrixBuilder,
-        ) -> Any:
-            assert df is raw_df
-            assert received_splitter is splitter
-            assert received_matrix_builder is matrix_builder
+    factory = MagicMock(side_effect=backtesters)
+    monkeypatch.setattr(comparison_module, "ModelBacktester", factory)
+    comparison = ModelComparison.compare_objectives(raw_df, splitter, matrix_builder)
 
-            metrics_by_objective = {
-                "count:poisson": {
-                    "MAE": 2.0,
-                    "RMSE": 3.0,
-                    "R2": 0.7,
-                    "WAPE": 0.4,
-                },
-                "reg:tweedie": {
-                    "MAE": 1.5,
-                    "RMSE": 2.5,
-                    "R2": 0.8,
-                    "WAPE": 0.3,
-                },
-            }
-
-            return SimpleNamespace(
-                global_metrics=metrics_by_objective[self.xgboost_objective]
-            )
-
-    monkeypatch.setattr(
-        model_comparison_module,
-        "ModelTrainer",
-        FakeModelTrainer,
-    )
-
-    comparison = ModelComparison.compare_objectives(
-        raw_df,
-        splitter,
-        matrix_builder,
-    )
-
-    assert called_objectives == list(ModelComparison.objectives)
-    assert comparison["objective"].tolist() == list(ModelComparison.objectives)
-    assert comparison["WAPE"].tolist() == [0.4, 0.3]
+    assert factory.call_count == len(ModelComparison.objectives)
+    assert set(comparison.backtests) == set(ModelComparison.objectives)
+    expected_rows = []
+    for objective, call, backtester, result in zip(
+        ModelComparison.objectives,
+        factory.call_args_list,
+        backtesters,
+        results,
+        strict=True,
+    ):
+        assert call.kwargs["strategy"].objective == objective
+        assert call.kwargs["splitter"] is splitter
+        assert call.kwargs["matrix_builder"] is matrix_builder
+        backtester.run.assert_called_once()
+        assert backtester.run.call_args.args[0] is raw_df
+        assert comparison.backtests[objective] is result
+        expected_rows.append({"objective": objective, **result.global_metrics})
+    pd.testing.assert_frame_equal(comparison.summary, pd.DataFrame(expected_rows))
 
 
 def test_select_best_objective_uses_lowest_metric() -> None:

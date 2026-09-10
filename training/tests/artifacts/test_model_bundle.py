@@ -4,8 +4,9 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import pytest
-from xgboost import XGBRegressor
-
+from ml_common.model.feature_schema import FeatureSchema
+from ml_common.model.model_kind import ModelKind
+from ml_common.model.preprocessing import XGBoostPreprocessor
 from training.artifacts.json_io import JsonExporter
 from training.artifacts.model_bundle import (
     ProductionModelBundle,
@@ -16,7 +17,7 @@ from training.artifacts.xgboost_io import XGBoostExporter, XGBoostImporter
 from training.data.columns import PipelineKey
 from training.data.mock_data_generator import ArticleKey, DayKey, WeatherKey
 from training.features.history_cleaner import HistoryCleaner, HistoryCleanerConfig
-from training.features.preprocessor import ModelPreprocessor
+from xgboost import XGBRegressor
 
 
 def _training_matrix() -> pd.DataFrame:
@@ -56,10 +57,12 @@ def _fitted_cleaner(raw_history_row_factory: Any) -> HistoryCleaner:
 def test_production_model_bundle_exporter_writes_expected_files(
     tmp_path: Path,
     raw_history_row_factory: Any,
+    feature_schema: FeatureSchema,
 ) -> None:
     train_df = _training_matrix()
-    preprocessor = ModelPreprocessor()
-    X_train, y_train = preprocessor.fit_transform_for_xgboost(train_df)
+    preprocessor = XGBoostPreprocessor(schema=feature_schema)
+    X_train = preprocessor.fit_transform(train_df)
+    y_train = train_df[PipelineKey.TARGET_DEMAND.value]
     model = XGBRegressor(
         n_estimators=3,
         max_depth=2,
@@ -72,6 +75,7 @@ def test_production_model_bundle_exporter_writes_expected_files(
 
     bundle = ProductionModelBundle(
         model=model,
+        model_kind=ModelKind.XGBOOST,
         preprocessor=preprocessor,
         cleaner=_fitted_cleaner(raw_history_row_factory),
         metadata={"schema_version": 1, "objective": "reg:squarederror"},
@@ -91,10 +95,12 @@ def test_production_model_bundle_exporter_writes_expected_files(
 def test_production_model_bundle_importer_restores_prediction_parity(
     tmp_path: Path,
     raw_history_row_factory: Any,
+    feature_schema: FeatureSchema,
 ) -> None:
     train_df = _training_matrix()
-    preprocessor = ModelPreprocessor()
-    X_train, y_train = preprocessor.fit_transform_for_xgboost(train_df)
+    preprocessor = XGBoostPreprocessor(schema=feature_schema)
+    X_train = preprocessor.fit_transform(train_df)
+    y_train = train_df[PipelineKey.TARGET_DEMAND.value]
     model = XGBRegressor(
         n_estimators=3,
         max_depth=2,
@@ -107,6 +113,7 @@ def test_production_model_bundle_importer_restores_prediction_parity(
 
     bundle = ProductionModelBundle(
         model=model,
+        model_kind=ModelKind.XGBOOST,
         preprocessor=preprocessor,
         cleaner=_fitted_cleaner(raw_history_row_factory),
         metadata={"schema_version": 1, "objective": "reg:squarederror"},
@@ -121,13 +128,17 @@ def test_production_model_bundle_importer_restores_prediction_parity(
         model_importer=XGBoostImporter(),
     ).load(tmp_path)
 
-    X_before, _ = preprocessor.transform_for_xgboost(train_df)
-    X_after, _ = loaded_bundle.preprocessor.transform_for_xgboost(train_df)
+    X_before = preprocessor.transform(train_df)
+    X_after = loaded_bundle.preprocessor.transform(train_df)
+
+    pd.testing.assert_frame_equal(X_after, X_before)
 
     np.testing.assert_allclose(
         loaded_bundle.model.predict(X_after),
         model.predict(X_before),
     )
+    assert loaded_bundle.model_kind == ModelKind.XGBOOST
+    assert loaded_bundle.preprocessor.schema == feature_schema
     assert loaded_bundle.cleaner.is_fitted
     assert loaded_bundle.metadata["model_file"] == "xgb_model.json"
 

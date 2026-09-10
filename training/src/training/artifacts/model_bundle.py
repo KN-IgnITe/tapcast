@@ -2,15 +2,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from ml_common.model.model_kind import ModelKind
+from ml_common.model.preprocessing.base import FeaturePreprocessor
 
+from training.artifacts.cleaner_artifacts import HistoryCleanerArtifacts
 from training.artifacts.interfaces import ArtifactExporter, ArtifactImporter
 from training.artifacts.joblib_io import JoblibExporter, JoblibImporter
 from training.artifacts.json_io import JsonExporter, JsonImporter
-from training.features.preprocessor import ModelPreprocessor
-
 from training.features.history_cleaner import HistoryCleaner
-
-from training.artifacts.cleaner_artifacts import HistoryCleanerArtifacts
 
 
 @dataclass
@@ -18,7 +17,8 @@ class ProductionModelBundle:
     """Contains the model and all artifacts required for inference."""
 
     model: Any
-    preprocessor: ModelPreprocessor
+    model_kind: ModelKind
+    preprocessor: FeaturePreprocessor
     cleaner: HistoryCleaner
     metadata: dict[str, Any]
 
@@ -50,6 +50,11 @@ class ProductionModelBundleExporter:
 
         metadata = bundle.metadata.copy()
         metadata["model_file"] = self.model_filename
+        metadata["model_kind"] = bundle.model_kind.value
+        metadata["feature_schema"] = {
+            "name": bundle.preprocessor.schema.name,
+            "version": bundle.preprocessor.schema.version,
+        }
 
         self.model_exporter.save(
             bundle.model,
@@ -87,28 +92,49 @@ class ProductionModelBundleImporter:
         self,
         source: Path | str,
     ) -> ProductionModelBundle:
-        """Load and reconstruct all artifacts required for inference."""
+        """Load a trusted bundle and validate its preprocessing metadata."""
 
         source = Path(source)
 
         metadata = self.json_importer.load(source / "metadata.json")
+
+        if not isinstance(metadata, dict):
+            raise ValueError("Bundle metadata must be a JSON object.")
 
         model_filename = metadata.get("model_file")
 
         if not isinstance(model_filename, str):
             raise ValueError("Metadata does not contain a valid model_file.")
 
-        model = self.model_importer.load(source / model_filename)
-        preprocessor = self.joblib_importer.load(source / "preprocessor.joblib")
-        cleaner_data = self.json_importer.load(source / "cleaner_artifacts.json")
-        cleaner_artifacts = HistoryCleanerArtifacts.from_dict(cleaner_data)
-        cleaner = cleaner_artifacts.to_cleaner()
+        if Path(model_filename).name != model_filename:
+            raise ValueError("model_file must be a filename, not a path.")
 
-        if not isinstance(preprocessor, ModelPreprocessor):
-            raise TypeError("Loaded preprocessor has an invalid type.")
+        model_kind_value = metadata.get("model_kind")
+
+        if not isinstance(model_kind_value, str):
+            raise ValueError("Metadata does not contain a valid model_kind.")
+
+        model_kind = ModelKind(model_kind_value)
+        preprocessor = self.joblib_importer.load(source / "preprocessor.joblib")
+
+        if not isinstance(preprocessor, FeaturePreprocessor):
+            raise ValueError("Loaded preprocessor has an ivalid type.")
+
+        expected_schema = {
+            "name": preprocessor.schema.name,
+            "version": preprocessor.schema.version,
+        }
+
+        if metadata.get("feature_schema") != expected_schema:
+            raise ValueError("Metadata feature_schema does not match preprocessor.")
+
+        cleaner_data = self.json_importer.load(source / "cleaner_artifacts.json")
+        cleaner = HistoryCleanerArtifacts.from_dict(cleaner_data).to_cleaner()
+        model = self.model_importer.load(source / model_filename)
 
         return ProductionModelBundle(
             model=model,
+            model_kind=model_kind,
             preprocessor=preprocessor,
             cleaner=cleaner,
             metadata=metadata,
