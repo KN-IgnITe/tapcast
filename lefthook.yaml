@@ -16,6 +16,11 @@ pre-commit:
             glob: "*.py"
             run: docker run --rm -v "$PWD:/workdir" -w /workdir pyfound/black:24.4.2 black {staged_files}
             stage_fixed: true
+          - name: ml-common-black
+            root: "ml_common/"
+            glob: "*.py"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir pyfound/black:24.4.2 black {staged_files}
+            stage_fixed: true
           - name: backend-goimports
             root: "backend/"
             glob: "*.go"
@@ -55,6 +60,15 @@ pre-commit:
             run: docker run --rm -v "$PWD:/workdir" -w /workdir alpine/flake8:7.0.0 {staged_files}
           - name: training-mypy-pytest
             root: "training/"
+            glob: "*.py"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files} && poetry run pytest -v"
+
+          - name: ml-common-flake8
+            root: "ml_common/"
+            glob: "*.py"
+            run: docker run --rm -v "$PWD:/workdir" -w /workdir alpine/flake8:7.0.0 {staged_files}
+          - name: ml-common-mypy-pytest
+            root: "ml_common/"
             glob: "*.py"
             run: docker run --rm -v "$PWD:/workdir" -w /workdir python:3.12-slim bash -c "pip install -q poetry && poetry install && poetry run mypy {staged_files} && poetry run pytest -v"
           
